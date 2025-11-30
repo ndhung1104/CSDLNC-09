@@ -1,0 +1,67 @@
+<section class="py-4 bg-light">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h2 class="mb-0">My Pets</h2>
+        <p class="text-muted mb-0">Manage your pet profiles</p>
+      </div>
+      <a href="/customer/pets/add" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-2"></i>
+        Add Pet
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="py-4">
+  <div class="container">
+    <div class="row g-4">
+      {{#each pets}}
+        <div class="col-md-6 col-lg-4">
+          <div class="customer-card card h-100">
+            <div class="card-body text-center">
+              <div class="pet-avatar mx-auto mb-3">
+                {{substring name 0 1}}
+              </div>
+              <h5 class="card-title">{{name}}</h5>
+              <p class="text-muted mb-3">{{breed}}</p>
+              <div class="row g-2 text-start mb-3">
+                <div class="col-6">
+                  <small class="text-muted">Type:</small>
+                  <div><strong>{{typeOfPet}}</strong></div>
+                </div>
+                <div class="col-6">
+                  <small class="text-muted">Gender:</small>
+                  <div><strong>{{gender}}</strong></div>
+                </div>
+                <div class="col-6">
+                  <small class="text-muted">Age:</small>
+                  <div><strong>{{age}} years</strong></div>
+                </div>
+                <div class="col-6">
+                  <small class="text-muted">Weight:</small>
+                  <div><strong>{{weight}} kg</strong></div>
+                </div>
+              </div>
+              <div class="mb-3">
+                <span class="badge bg-success-subtle text-success">{{healthStatus}}</span>
+              </div>
+              <div class="d-grid gap-2">
+                <a href="/customer/pets/{{petId}}" class="btn btn-primary btn-sm">View Details</a>
+                <a href="/customer/pets/{{petId}}/edit" class="btn btn-outline-secondary btn-sm">Edit</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      {{else}}
+        <div class="col-12">
+          <div class="text-center py-5">
+            <i class="bi bi-heart text-muted" style="font-size: 4rem;"></i>
+            <p class="text-muted mt-3">No pets registered yet</p>
+            <a href="/customer/pets/add" class="btn btn-primary">Add Your First Pet</a>
+          </div>
+        </div>
+      {{/each}}
+    </div>
+  </div>
+</section>

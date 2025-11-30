@@ -1,0 +1,12 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: src/Dockerfile
+    command: npm start
+    ports:
+      - "54321:54321"
+    environment:
+      NODE_ENV: production
+      PORT: 54321
+    restart: unless-stopped

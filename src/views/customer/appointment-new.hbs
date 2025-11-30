@@ -1,0 +1,112 @@
+<section class="py-4 bg-light">
+  <div class="container">
+    <h2 class="mb-0">Book an Appointment</h2>
+    <p class="text-muted mb-0">Schedule a visit for your pet</p>
+  </div>
+</section>
+
+<section class="py-4">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <div class="customer-card card">
+          <div class="card-body p-4">
+            <form action="/customer/appointments" method="POST" id="appointmentForm">
+              <div class="mb-4">
+                <h5 class="mb-3">1. Select Your Pet</h5>
+                <div class="row g-3">
+                  {{#each pets}}
+                    <div class="col-md-6">
+                      <input type="radio" class="btn-check" name="petId" id="pet{{petId}}" value="{{petId}}" required>
+                      <label class="btn btn-outline-primary w-100 text-start p-3" for="pet{{petId}}">
+                        <div class="d-flex align-items-center">
+                          <div class="pet-avatar me-3" style="width: 50px; height: 50px; font-size: 1.2rem;">
+                            {{substring name 0 1}}
+                          </div>
+                          <div>
+                            <strong>{{name}}</strong>
+                            <br>
+                            <small class="text-muted">{{breed}} • {{typeOfPet}}</small>
+                          </div>
+                        </div>
+                      </label>
+                    </div>
+                  {{/each}}
+                </div>
+              </div>
+
+              <hr>
+
+              <div class="mb-4">
+                <h5 class="mb-3">2. Select Service</h5>
+                <label for="serviceId" class="form-label">Service Type</label>
+                <select class="form-select" id="serviceId" name="serviceId" required>
+                  <option value="">Choose a service...</option>
+                  {{#each services}}
+                    <option value="{{serviceId}}">{{serviceName}} - ${{price}}</option>
+                  {{/each}}
+                </select>
+              </div>
+
+              <hr>
+
+              <div class="mb-4">
+                <h5 class="mb-3">3. Select Branch</h5>
+                <label for="branchId" class="form-label">Clinic Location</label>
+                <select class="form-select" id="branchId" name="branchId" required>
+                  <option value="">Choose a branch...</option>
+                  {{#each branches}}
+                    <option value="{{branchId}}">{{branchName}} - {{address}}</option>
+                  {{/each}}
+                </select>
+              </div>
+
+              <hr>
+
+              <div class="mb-4">
+                <h5 class="mb-3">4. Select Date &amp; Time</h5>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label for="appointmentDate" class="form-label">Date</label>
+                    <input type="date" class="form-control" id="appointmentDate" name="appointmentDate" required>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="appointmentTime" class="form-label">Time</label>
+                    <select class="form-select" id="appointmentTime" name="appointmentTime" required>
+                      <option value="">Select time...</option>
+                      <option value="08:00">08:00 AM</option>
+                      <option value="09:00">09:00 AM</option>
+                      <option value="10:00">10:00 AM</option>
+                      <option value="11:00">11:00 AM</option>
+                      <option value="13:00">01:00 PM</option>
+                      <option value="14:00">02:00 PM</option>
+                      <option value="15:00">03:00 PM</option>
+                      <option value="16:00">04:00 PM</option>
+                      <option value="17:00">05:00 PM</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <hr>
+
+              <div class="mb-4">
+                <h5 class="mb-3">5. Additional Information (Optional)</h5>
+                <label for="notes" class="form-label">Notes or Special Requests</label>
+                <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Any specific concerns or requests..."></textarea>
+              </div>
+
+              <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary btn-lg flex-grow-1">
+                  <i class="bi bi-check-circle me-2"></i>
+                  Confirm Booking
+                </button>
+                <a href="/customer/appointments" class="btn btn-outline-secondary btn-lg">Cancel</a>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

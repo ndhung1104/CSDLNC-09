@@ -1,0 +1,150 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="page-title mb-1">Dashboard</h2>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item active">Dashboard</li>
+      </ol>
+    </nav>
+  </div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-download me-2"></i>
+      Export Report
+    </button>
+    <button class="btn btn-primary btn-sm">
+      <i class="bi bi-plus-circle me-2"></i>
+      New Appointment
+    </button>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3 col-sm-6">
+    <div class="kpi-card card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <div class="kpi-icon bg-primary-subtle text-primary"><i class="bi bi-people"></i></div>
+          <span class="badge bg-success-subtle text-success">+12%</span>
+        </div>
+        <h6 class="text-muted text-uppercase small mb-1">Total Customers</h6>
+        <h3 class="mb-0">{{stats.totalCustomers}}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6">
+    <div class="kpi-card card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <div class="kpi-icon bg-success-subtle text-success"><i class="bi bi-heart-pulse"></i></div>
+          <span class="badge bg-success-subtle text-success">+8%</span>
+        </div>
+        <h6 class="text-muted text-uppercase small mb-1">Total Pets</h6>
+        <h3 class="mb-0">{{stats.totalPets}}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6">
+    <div class="kpi-card card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <div class="kpi-icon bg-warning-subtle text-warning"><i class="bi bi-calendar-event"></i></div>
+          <span class="badge bg-primary-subtle text-primary">Today</span>
+        </div>
+        <h6 class="text-muted text-uppercase small mb-1">Appointments Today</h6>
+        <h3 class="mb-0">{{stats.appointmentsToday}}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6">
+    <div class="kpi-card card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <div class="kpi-icon bg-info-subtle text-info"><i class="bi bi-currency-dollar"></i></div>
+          <span class="badge bg-success-subtle text-success">+15%</span>
+        </div>
+        <h6 class="text-muted text-uppercase small mb-1">Revenue (Month)</h6>
+        <h3 class="mb-0">${{stats.revenueMonth}}</h3>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Revenue Overview</h5>
+        <div class="btn-group btn-group-sm" role="group">
+          <button type="button" class="btn btn-outline-secondary">Week</button>
+          <button type="button" class="btn btn-outline-secondary active">Month</button>
+          <button type="button" class="btn btn-outline-secondary">Year</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="text-center text-muted py-5">
+          <i class="bi bi-bar-chart" style="font-size: 3rem;"></i>
+          <p class="mt-3">Chart placeholder - integrate with Chart.js or similar</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header bg-white">
+        <h5 class="mb-0">Top Services</h5>
+      </div>
+      <div class="card-body">
+        <div class="text-center text-muted py-5">
+          <i class="bi bi-pie-chart" style="font-size: 3rem;"></i>
+          <p class="mt-3">Chart placeholder</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header bg-white d-flex justify-content-between align-items-center">
+    <div>
+      <h5 class="mb-0">Upcoming Appointments</h5>
+      <small class="text-muted">Next 10 scheduled appointments</small>
+    </div>
+    <a href="/management/appointments" class="btn btn-sm btn-outline-primary">View All</a>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Date/Time</th>
+            <th>Customer</th>
+            <th>Pet</th>
+            <th>Service</th>
+            <th>Branch</th>
+            <th>Status</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each upcomingAppointments}}
+            <tr>
+              <td>
+                <div>{{formatDate appointmentDate}}</div>
+                <small class="text-muted">{{appointmentTime}}</small>
+              </td>
+              <td>{{customerName}}</td>
+              <td>{{petName}}</td>
+              <td>{{serviceName}}</td>
+              <td>{{branchName}}</td>
+              <td><span class="badge badge-status-{{toLowerCase status}}">{{status}}</span></td>
+              <td class="text-end">
+                <button class="btn btn-sm btn-outline-primary" type="button">View</button>
+              </td>
+            </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

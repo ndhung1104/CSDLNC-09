@@ -1,0 +1,130 @@
+<section class="py-4 bg-light">
+  <div class="container">
+    <h2 class="mb-0">Welcome back, {{customer.name}}!</h2>
+    <p class="text-muted">Manage your pets and appointments</p>
+  </div>
+</section>
+
+<section class="py-4">
+  <div class="container">
+    <div class="row g-3 mb-4">
+      <div class="col-md-3 col-6">
+        <div class="customer-card card p-3">
+          <div class="d-flex align-items-center">
+            <div class="kpi-icon bg-primary-subtle text-primary me-3"><i class="bi bi-heart"></i></div>
+            <div>
+              <h6 class="text-muted mb-0 small">My Pets</h6>
+              <h4 class="mb-0">{{stats.totalPets}}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="customer-card card p-3">
+          <div class="d-flex align-items-center">
+            <div class="kpi-icon bg-success-subtle text-success me-3"><i class="bi bi-calendar-check"></i></div>
+            <div>
+              <h6 class="text-muted mb-0 small">Upcoming</h6>
+              <h4 class="mb-0">{{stats.upcomingAppointments}}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="customer-card card p-3">
+          <div class="d-flex align-items-center">
+            <div class="kpi-icon bg-warning-subtle text-warning me-3"><i class="bi bi-star"></i></div>
+            <div>
+              <h6 class="text-muted mb-0 small">Loyalty Points</h6>
+              <h4 class="mb-0">{{customer.loyaltyPoints}}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="customer-card card p-3">
+          <div class="d-flex align-items-center">
+            <div class="kpi-icon bg-info-subtle text-info me-3"><i class="bi bi-award"></i></div>
+            <div>
+              <h6 class="text-muted mb-0 small">Membership</h6>
+              <h4 class="mb-0 small">{{customer.membershipRank}}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <div class="customer-card card">
+          <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">My Pets</h5>
+            <a href="/customer/pets/add" class="btn btn-sm btn-primary">Add Pet</a>
+          </div>
+          <div class="card-body">
+            {{#if pets.length}}
+              {{#each pets}}
+                <div class="d-flex align-items-center mb-3 pb-3 border-bottom">
+                  <div class="pet-avatar me-3">
+                    {{substring name 0 1}}
+                  </div>
+                  <div class="flex-grow-1">
+                    <h6 class="mb-0">{{name}}</h6>
+                    <small class="text-muted">{{breed}} • {{typeOfPet}} • {{gender}}</small>
+                    <div class="mt-1">
+                      <span class="badge bg-success-subtle text-success">{{healthStatus}}</span>
+                    </div>
+                  </div>
+                  <a href="/customer/pets/{{petId}}" class="btn btn-sm btn-outline-primary">View</a>
+                </div>
+              {{/each}}
+            {{else}}
+              <p class="text-muted text-center py-4">No pets registered yet. Add your first pet!</p>
+            {{/if}}
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="customer-card card">
+          <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Upcoming Appointments</h5>
+            <a href="/customer/appointments/new" class="btn btn-sm btn-primary">Book Now</a>
+          </div>
+          <div class="card-body">
+            {{#if upcomingAppointments.length}}
+              {{#each upcomingAppointments}}
+                <div class="mb-3 pb-3 border-bottom">
+                  <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                      <h6 class="mb-1">{{serviceName}}</h6>
+                      <small class="text-muted">
+                        <i class="bi bi-calendar me-1"></i>
+                        {{formatDate appointmentDate}}
+                        <i class="bi bi-clock ms-2 me-1"></i>
+                        {{appointmentTime}}
+                      </small>
+                    </div>
+                    <span class="badge badge-status-{{toLowerCase status}}">{{status}}</span>
+                  </div>
+                  <small class="text-muted">
+                    <i class="bi bi-geo-alt me-1"></i>
+                    {{branchName}}
+                    <br>
+                    <i class="bi bi-heart me-1"></i>
+                    {{petName}}
+                  </small>
+                  <div class="mt-2">
+                    <a href="/customer/appointments/{{appointmentId}}" class="btn btn-sm btn-outline-secondary">View Details</a>
+                  </div>
+                </div>
+              {{/each}}
+            {{else}}
+              <p class="text-muted text-center py-4">No upcoming appointments. Book one now!</p>
+            {{/if}}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
