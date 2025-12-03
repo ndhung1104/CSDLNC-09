@@ -1,0 +1,105 @@
+<aside class="sidebar d-none d-lg-flex flex-column p-3">
+  <nav>
+    <div class="nav-category">Overview</div>
+    <ul class="nav flex-column mb-2">
+      <li class="nav-item">
+        <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'dashboard' ? 'active' : '' %>" href="/management/dashboard">
+          <i class="bi bi-speedometer2 me-2"></i>
+          Dashboard
+        </a>
+      </li>
+    </ul>
+
+    <div class="nav-category">Customers &amp; Pets</div>
+    <ul class="nav flex-column mb-2">
+      <li class="nav-item">
+        <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'customers' ? 'active' : '' %>" href="/management/customers">
+          <i class="bi bi-people me-2"></i>
+          Customers
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'pets' ? 'active' : '' %>" href="/management/pets">
+          <i class="bi bi-heart-pulse me-2"></i>
+          Pets
+        </a>
+      </li>
+    </ul>
+
+    <div class="nav-category">Operations</div>
+    <ul class="nav flex-column mb-2">
+      <li class="nav-item">
+        <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'appointments' ? 'active' : '' %>" href="/management/appointments">
+          <i class="bi bi-calendar-event me-2"></i>
+          Appointments
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'branches' ? 'active' : '' %>" href="/management/branches">
+          <i class="bi bi-building me-2"></i>
+          Branches
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'employees' ? 'active' : '' %>" href="/management/employees">
+          <i class="bi bi-person-badge me-2"></i>
+          Employees
+        </a>
+      </li>
+    </ul>
+
+    <div class="nav-category">Services &amp; Products</div>
+    <ul class="nav flex-column mb-2">
+      <li class="nav-item">
+        <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'services' ? 'active' : '' %>" href="/management/services">
+          <i class="bi bi-clipboard2-pulse me-2"></i>
+          Services
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'products' ? 'active' : '' %>" href="/management/products">
+          <i class="bi bi-bag me-2"></i>
+          Products
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'stock' ? 'active' : '' %>" href="/management/stock">
+          <i class="bi bi-box-seam me-2"></i>
+          Stock
+        </a>
+      </li>
+    </ul>
+
+    <div class="nav-category">Medical</div>
+    <ul class="nav flex-column mb-2">
+      <li class="nav-item">
+        <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'medical' ? 'active' : '' %>" href="/management/medical">
+          <i class="bi bi-hospital me-2"></i>
+          Medical Records
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'vaccination' ? 'active' : '' %>" href="/management/vaccination">
+          <i class="bi bi-shield-plus me-2"></i>
+          Vaccination
+        </a>
+      </li>
+    </ul>
+
+    <div class="nav-category">Financial</div>
+    <ul class="nav flex-column mb-2">
+      <li class="nav-item">
+        <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'receipts' ? 'active' : '' %>" href="/management/receipts">
+          <i class="bi bi-receipt me-2"></i>
+          Receipts
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'reviews' ? 'active' : '' %>" href="/management/reviews">
+          <i class="bi bi-chat-square-heart me-2"></i>
+          Reviews
+        </a>
+      </li>
+    </ul>
+  </nav>
+</aside>

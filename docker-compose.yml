@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: petcarex-mssql
+    environment:
+      SA_PASSWORD: "PetCareX@2024"
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Express"
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+      - ./PETCAREX_Script.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - petcarex-network
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "PetCareX@2024" -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  app:
+    build:
+      context: .
+      dockerfile: src/Dockerfile
+    container_name: petcarex-app
+    command: npm start
+    ports:
+      - "54321:54321"
+    volumes:
+      - ./src:/app/src
+    environment:
+      NODE_ENV: development
+      PORT: 54321
+      DB_HOST: mssql
+      DB_PORT: 1433
+      DB_USER: sa
+      DB_PASSWORD: "PetCareX@2024"
+      DB_NAME: PETCAREX
+    depends_on:
+      mssql:
+        condition: service_healthy
+    networks:
+      - petcarex-network
+    restart: unless-stopped
+
+volumes:
+  mssql_data:
+    driver: local
+
+networks:
+  petcarex-network:
+    driver: bridge

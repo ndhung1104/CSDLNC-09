@@ -1,0 +1,168 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="page-title mb-1">Customers</h2>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="/management/dashboard">Dashboard</a></li>
+        <li class="breadcrumb-item active">Customers</li>
+      </ol>
+    </nav>
+  </div>
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#customerModal">
+    <i class="bi bi-plus-circle me-2"></i>
+    Add Customer
+  </button>
+</div>
+
+<div class="card">
+  <div class="card-header bg-white">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label for="searchCustomer" class="form-label small">Search</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input type="text" class="form-control" id="searchCustomer" placeholder="Name, phone, or email...">
+        </div>
+      </div>
+      <div class="col-md-3">
+        <label for="filterRank" class="form-label small">Membership Rank</label>
+        <select class="form-select" id="filterRank">
+          <option value="">All Ranks</option>
+          <option value="bronze">Bronze</option>
+          <option value="silver">Silver</option>
+          <option value="gold">Gold</option>
+          <option value="platinum">Platinum</option>
+        </select>
+      </div>
+      <div class="col-md-5 text-md-end">
+        <button class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-funnel me-2"></i>
+          More Filters
+        </button>
+        <button class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-download me-2"></i>
+          Export
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Gender</th>
+            <th>Phone</th>
+            <th>Email</th>
+            <th>Membership</th>
+            <th class="text-end">Loyalty Points</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (typeof customers !== 'undefined' && customers && customers.length > 0) { %>
+            <% customers.forEach((customer) => { %>
+              <tr>
+                <td><code><%= customer.customerId %></code></td>
+                <td>
+                  <a href="/management/customers/<%= customer.customerId %>" class="text-decoration-none">
+                    <%= customer.customerName %>
+                  </a>
+                </td>
+                <td><%= customer.gender %></td>
+                <td><%= customer.phone %></td>
+                <td><%= customer.email %></td>
+                <td>
+                  <span class="badge bg-<%= customer.membershipColor %>-subtle text-<%= customer.membershipColor %>">
+                    <%= customer.membershipRank %>
+                  </span>
+                </td>
+                <td class="text-end"><%= customer.loyaltyPoints %></td>
+                <td class="text-end">
+                  <div class="btn-group btn-group-sm">
+                    <a href="/management/customers/<%= customer.customerId %>" class="btn btn-outline-secondary">View</a>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#customerModal" data-customer-id="<%= customer.customerId %>">Edit</button>
+                    <button type="button" class="btn btn-outline-danger">Delete</button>
+                  </div>
+                </td>
+              </tr>
+            <% }); %>
+          <% } else { %>
+            <tr>
+              <td colspan="8" class="text-center py-4 text-muted">No customers found</td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+    <small class="text-muted">Showing <%= typeof pagination !== 'undefined' && pagination ? pagination.start : 0 %> to <%= typeof pagination !== 'undefined' && pagination ? pagination.end : 0 %> of <%= typeof pagination !== 'undefined' && pagination ? pagination.total : 0 %> customers</small>
+    <nav>
+      <ul class="pagination pagination-sm mb-0">
+        <li class="page-item <%= typeof pagination !== 'undefined' && pagination && pagination.isFirst ? 'disabled' : '' %>">
+          <a class="page-link" href="?page=<%= typeof pagination !== 'undefined' && pagination ? pagination.prevPage : 1 %>">Previous</a>
+        </li>
+        <% if (typeof pagination !== 'undefined' && pagination && pagination.pages) { %>
+          <% pagination.pages.forEach((p) => { %>
+            <li class="page-item <%= p.active ? 'active' : '' %>">
+              <a class="page-link" href="?page=<%= p.page %>"><%= p.page %></a>
+            </li>
+          <% }); %>
+        <% } %>
+        <li class="page-item <%= typeof pagination !== 'undefined' && pagination && pagination.isLast ? 'disabled' : '' %>">
+          <a class="page-link" href="?page=<%= typeof pagination !== 'undefined' && pagination ? pagination.nextPage : 1 %>">Next</a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</div>
+
+<div class="modal fade" id="customerModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add / Edit Customer</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="/management/customers" method="POST">
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="customerName" class="form-label">Customer Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="customerName" name="customerName" required>
+            </div>
+            <div class="col-md-3">
+              <label for="gender" class="form-label">Gender <span class="text-danger">*</span></label>
+              <select class="form-select" id="gender" name="gender" required>
+                <option value="">Select...</option>
+                <option value="Nam">Nam</option>
+                <option value="Nữ">Nữ</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label for="birthdate" class="form-label">Birthdate</label>
+              <input type="date" class="form-control" id="birthdate" name="birthdate">
+            </div>
+            <div class="col-md-6">
+              <label for="phone" class="form-label">Phone <span class="text-danger">*</span></label>
+              <input type="tel" class="form-control" id="phone" name="phone" required>
+            </div>
+            <div class="col-md-6">
+              <label for="email" class="form-label">Email</label>
+              <input type="email" class="form-control" id="email" name="email">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Customer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

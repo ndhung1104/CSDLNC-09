@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include('../partials/common/head') %>
+    <link rel="stylesheet" href="/css/management-styles.css">
+  </head>
+  <body>
+    <div class="app-wrapper">
+      <%- include('../partials/management/navbar') %>
+
+      <div class="d-flex flex-grow-1">
+        <%- include('../partials/management/sidebar') %>
+        <%- include('../partials/management/mobile-sidebar') %>
+        <main class="flex-grow-1">
+          <%- body %>
+        </main>
+      </div>
+    </div>
+
+    <%- include('../partials/common/scripts') %>
+    <script src="/js/management-scripts.js"></script>
+  </body>
+</html>    <%- include('../partials/common/scripts') %>
+    <script src="/js/management-scripts.js"></script>
+  </body>
+</html>

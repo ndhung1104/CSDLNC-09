@@ -1,0 +1,82 @@
+<nav class="navbar navbar-expand-lg navbar-light customer-navbar sticky-top">
+  <div class="container">
+    <a class="navbar-brand d-flex align-items-center" href="/customer/dashboard">
+      <i class="bi bi-heart-pulse-fill text-primary me-2" style="font-size: 1.5rem;"></i>
+      <span class="fw-bold">PETCAREX</span>
+    </a>
+    <a class="btn btn-outline-secondary btn-sm ms-2" href="/management/dashboard">
+      <i class="bi bi-speedometer2 me-1"></i>
+      Management
+    </a>
+    <% if (typeof user !== 'undefined' && user) { %>
+      <button
+        class="navbar-toggler"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#customerNav"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="customerNav">
+        <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a class="nav-link" href="/customer/dashboard">
+              <i class="bi bi-house-door me-1"></i>
+              Dashboard
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/customer/appointments">
+              <i class="bi bi-calendar-check me-1"></i>
+              My Appointments
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/customer/pets">
+              <i class="bi bi-heart me-1"></i>
+              My Pets
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/customer/receipts">
+              <i class="bi bi-receipt me-1"></i>
+              Receipts
+            </a>
+          </li>
+          <li class="nav-item dropdown">
+            <a
+              class="nav-link dropdown-toggle d-flex align-items-center"
+              href="#"
+              id="userDropdown"
+              role="button"
+              data-bs-toggle="dropdown"
+            >
+              <span class="avatar-circle me-2"><%= user.initials %></span>
+              <%= user.name %>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li>
+                <a class="dropdown-item" href="/customer/profile">
+                  <i class="bi bi-person me-2"></i>
+                  My Profile
+                </a>
+              </li>
+              <li><hr class="dropdown-divider"></li>
+              <li>
+                <a class="dropdown-item text-danger" href="/customer/logout">
+                  <i class="bi bi-box-arrow-right me-2"></i>
+                  Logout
+                </a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    <% } else { %>
+      <div class="d-flex">
+        <a href="/customer/login" class="btn btn-outline-primary me-2">Login</a>
+        <a href="/customer/register" class="btn btn-primary">Register</a>
+      </div>
+    <% } %>
+  </div>
+</nav>
