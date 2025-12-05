@@ -3,6 +3,7 @@ from faker import Faker
 import random
 from datetime import datetime, timedelta
 from collections import defaultdict
+from pathlib import Path
 
 # pip install faker pyodbc
 
@@ -57,10 +58,74 @@ def random_date_between(start_date, end_date):
     rand_seconds = random.randint(0, 86400 - 1)
     return start + timedelta(days=rand_days, seconds=rand_seconds)
 
+# ==============================
+# SEED MASTER (seed_master.sql)
+# ==============================
+def execute_sql_batches(sql_text):
+    """
+    Split SQL text by GO batches and execute sequentially.
+    """
+    batches = []
+    current = []
+    for line in sql_text.splitlines():
+        if line.strip().upper() == "GO":
+            batch = "\n".join(current).strip()
+            if batch:
+                batches.append(batch)
+            current = []
+        else:
+            current.append(line)
+
+    tail = "\n".join(current).strip()
+    if tail:
+        batches.append(tail)
+
+    for batch in batches:
+        cursor.execute(batch)
+    conn.commit()
+
+
+def run_seed_master_file():
+    """
+    Execute seed_master.sql once to bootstrap master data.
+    """
+    sql_path = Path(__file__).resolve().parent / "seed_master.sql"
+    if not sql_path.exists():
+        raise FileNotFoundError(f"seed_master.sql not found at {sql_path}")
+
+    print(f"Running master seed from {sql_path.name} ...")
+    sql_text = sql_path.read_text(encoding="utf-8", errors="ignore")
+    execute_sql_batches(sql_text)
+    print("Master seed finished.")
+
+
+def ensure_master_seeded():
+    """
+    Only run seed_master.sql when master tables are empty to avoid duplicates.
+    """
+    cursor.execute("SELECT COUNT(*) FROM MEMBERSHIP_RANK")
+    membership_count = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM PET_BREED")
+    breed_count = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM SERVICE")
+    service_count = cursor.fetchone()[0]
+
+    if membership_count == 0 and breed_count == 0 and service_count == 0:
+        run_seed_master_file()
+        return
+
+    if membership_count == 0 or breed_count == 0 or service_count == 0:
+        raise RuntimeError(
+            "Master data is partially present. Please reseed or clean the master tables before rerunning."
+        )
+
+    print("Master data detected, skip seed_master.sql.")
+
 
 # ==============================
 # LẤY MASTER ID
 # ==============================
+ensure_master_seeded()
 print("Đang load master IDs...")
 
 membership_ids = fetch_ids("SELECT MEMBERSHIP_RANK_ID FROM MEMBERSHIP_RANK")
@@ -93,10 +158,16 @@ print(f"- VET: {len(vet_ids)}")
 def insert_customers(n=N_CUSTOMERS):
     print(f"Đang sinh {n} khách hàng...")
     batch_size = 1000
-    for i in range(1, n + 1):
+    cursor.execute("SELECT COUNT(*) FROM CUSTOMER")
+    existing = cursor.fetchone()[0]
+    start_index = existing + 1
+
+    for i in range(0, n):
+        seq = start_index + i
         name = fake.name()
         phone = "0" + str(random.randint(100000000, 999999999))  # 10 số
-        email = f"user{i}@example.com"
+        email = f"user{seq}@example.com"
+        password = f"cust_pwd_{seq:010d}"
         gender = random.choice(["Nam", "Nữ"])
         birthdate = fake.date_between(start_date="-50y", end_date="-18y")
         rank_id = random.choice(membership_ids)
@@ -108,17 +179,18 @@ def insert_customers(n=N_CUSTOMERS):
                 CUSTOMER_NAME,
                 CUSTOMER_PHONE,
                 CUSTOMER_EMAIL,
+                EMPLOYEE_PASSWORD,
                 CUSTOMER_GENDER,
                 CUSTOMER_BIRTHDATE,
                 CUSTOMER_LOYALTY
-            ) VALUES (?, ?, ?, ?, ?, ?, 0)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 0)
             """,
-            (rank_id, name, phone, email, gender, birthdate),
+            (rank_id, name, phone, email, password, gender, birthdate),
         )
 
-        if i % batch_size == 0:
+        if (i + 1) % batch_size == 0:
             conn.commit()
-            print(f"  > Đã insert {i} khách hàng...")
+            print(f"  > Đã insert {seq} khách hàng...")
 
     conn.commit()
     print("Hoàn thành sinh CUSTOMER.")

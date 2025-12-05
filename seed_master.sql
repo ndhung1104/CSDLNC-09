@@ -148,14 +148,16 @@ INSERT INTO MEDICAL_SERVICE (MEDICAL_SERVICE_ID, MEDICAL_SERVICE_FEE) VALUES
 GO
 
 /* ==========================================
-   8. VACCINE (identity)
+   8. VACCINE (identity, explicit IDs for FK)
    ========================================== */
-INSERT INTO VACCINE (VACCINE_NAME, VACCINE_DES) VALUES
-(N'Vaccine 5 trong 1 cho chó', N'Phòng care, parvo, viêm gan, ho cũi chó, dại.'),
-(N'Vaccine 7 trong 1 cho chó', N'Phòng nhiều bệnh truyền nhiễm cho chó.'),
-(N'Vaccine dại cho chó mèo',  N'Phòng bệnh dại.'),
-(N'Vaccine 4 trong 1 cho mèo', N'Phòng cúm mèo, viêm mũi họng, panleukopenia...'),
-(N'Vaccine FIP cho mèo',      N'Hỗ trợ phòng một số bệnh truyền nhiễm.');
+SET IDENTITY_INSERT VACCINE ON;
+INSERT INTO VACCINE (VACCINE_ID, VACCINE_NAME, VACCINE_DES) VALUES
+(1, N'Vaccine 5 trong 1 cho chó', N'Phòng care, parvo, viêm gan, ho cũi chó, dại.'),
+(2, N'Vaccine 7 trong 1 cho chó', N'Phòng nhiều bệnh truyền nhiễm cho chó.'),
+(3, N'Vaccine dại cho chó mèo',  N'Phòng bệnh dại.'),
+(4, N'Vaccine 4 trong 1 cho mèo', N'Phòng cúm mèo, viêm mũi họng, panleukopenia...'),
+(5, N'Vaccine FIP cho mèo',      N'Hỗ trợ phòng một số bệnh truyền nhiễm.');
+SET IDENTITY_INSERT VACCINE OFF;
 GO
 
 /* ==========================================
@@ -200,28 +202,30 @@ INSERT INTO EMPLOYEE (
     EMPLOYEE_NAME,
     EMPLOYEE_GENDER,
     EMPLOYEE_BIRTHDATE,
+    EMPLOYEE_EMAIL,
+    EMPLOYEE_PASSWORD,
     EMPLOYEE_JOIN_DATE,
     EMPLOYEE_SALARY,
     EMPLOYEE_POSITION,
     BRANCH_ID
 ) VALUES
-('012345678901', N'Nguyễn Thị Lễ Tân 1', N'Nữ', '1995-02-10', '2020-01-01', 12000000, 'RECEP', 1),
-('012345678902', N'Lê Văn Lễ Tân 2',    N'Nam', '1994-05-20', '2019-03-15', 12000000, 'RECEP', 2),
-('012345678903', N'Trần Thị Lễ Tân 3',  N'Nữ', '1996-09-12', '2021-07-01', 11000000, 'RECEP', 3),
-('012345678904', N'Phạm Văn Lễ Tân 4',  N'Nam', '1993-11-30', '2018-09-10', 13000000, 'RECEP', 4),
+('012345678901', N'Nguyễn Thị Lễ Tân 1',        N'Nữ',  '1995-02-10', 'emp1@petcarex.com',  'emp_pwd_0000000001', '2020-01-01', 12000000, 'RECEP', 1),
+('012345678902', N'Lê Văn Lễ Tân 2',            N'Nam', '1994-05-20', 'emp2@petcarex.com',  'emp_pwd_0000000002', '2019-03-15', 12000000, 'RECEP', 2),
+('012345678903', N'Trần Thị Lễ Tân 3',          N'Nữ',  '1996-09-12', 'emp3@petcarex.com',  'emp_pwd_0000000003', '2021-07-01', 11000000, 'RECEP', 3),
+('012345678904', N'Phạm Văn Lễ Tân 4',          N'Nam', '1993-11-30', 'emp4@petcarex.com',  'emp_pwd_0000000004', '2018-09-10', 13000000, 'RECEP', 4),
 
-('012345678905', N'Nguyễn Văn Bán Hàng 1', N'Nam', '1990-01-15', '2017-05-01', 10000000, 'SALES', 1),
-('012345678906', N'Hoàng Thị Bán Hàng 2',  N'Nữ', '1992-03-22', '2018-08-01', 10500000, 'SALES', 3),
+('012345678905', N'Nguyễn Văn Bán Hàng 1',      N'Nam', '1990-01-15', 'emp5@petcarex.com',  'emp_pwd_0000000005', '2017-05-01', 10000000, 'SALES', 1),
+('012345678906', N'Hoàng Thị Bán Hàng 2',       N'Nữ',  '1992-03-22', 'emp6@petcarex.com',  'emp_pwd_0000000006', '2018-08-01', 10500000, 'SALES', 3),
 
-('012345678907', N'Bác sĩ thú y 1', N'Nam', '1985-04-10', '2015-01-01', 20000000, 'VET', 1),
-('012345678908', N'Bác sĩ thú y 2', N'Nữ', '1987-07-18', '2016-06-01', 21000000, 'VET', 2),
-('012345678909', N'Bác sĩ thú y 3', N'Nam', '1989-10-30', '2017-09-01', 19000000, 'VET', 3),
-('012345678910', N'Bác sĩ thú y 4', N'Nữ', '1991-12-05', '2019-02-01', 18000000, 'VET', 4),
+('012345678907', N'Bác sĩ thú y 1',             N'Nam', '1985-04-10', 'emp7@petcarex.com',  'emp_pwd_0000000007', '2015-01-01', 20000000, 'VET',   1),
+('012345678908', N'Bác sĩ thú y 2',             N'Nữ',  '1987-07-18', 'emp8@petcarex.com',  'emp_pwd_0000000008', '2016-06-01', 21000000, 'VET',   2),
+('012345678909', N'Bác sĩ thú y 3',             N'Nam', '1989-10-30', 'emp9@petcarex.com',  'emp_pwd_0000000009', '2017-09-01', 19000000, 'VET',   3),
+('012345678910', N'Bác sĩ thú y 4',             N'Nữ',  '1991-12-05', 'emp10@petcarex.com', 'emp_pwd_0000000010', '2019-02-01', 18000000, 'VET',   4),
 
-('012345678911', N'Quản lý chi nhánh Q1',   N'Nam', '1980-01-01', '2010-01-01', 25000000, 'MGR', 1),
-('012345678912', N'Quản lý chi nhánh Thủ Đức', N'Nữ', '1982-05-05', '2012-04-01', 24000000, 'MGR', 2),
-('012345678913', N'Quản lý chi nhánh Bình Thạnh', N'Nam', '1979-08-15', '2011-07-01', 24500000, 'MGR', 3),
-('012345678914', N'Quản lý chi nhánh Tân Bình', N'Nữ', '1983-09-25', '2013-09-01', 24500000, 'MGR', 4);
+('012345678911', N'Quản lý chi nhánh Q1',       N'Nam', '1980-01-01', 'emp11@petcarex.com', 'emp_pwd_0000000011', '2010-01-01', 25000000, 'MGR',   1),
+('012345678912', N'Quản lý chi nhánh Thủ Đức',  N'Nữ',  '1982-05-05', 'emp12@petcarex.com', 'emp_pwd_0000000012', '2012-04-01', 24000000, 'MGR',   2),
+('012345678913', N'Quản lý chi nhánh Bình Thạnh', N'Nam','1979-08-15', 'emp13@petcarex.com', 'emp_pwd_0000000013', '2011-07-01', 24500000, 'MGR', 3),
+('012345678914', N'Quản lý chi nhánh Tân Bình', N'Nữ',  '1983-09-25', 'emp14@petcarex.com', 'emp_pwd_0000000014', '2013-09-01', 24500000, 'MGR', 4);
 GO
 
 /* ==========================================
