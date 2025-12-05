@@ -346,6 +346,8 @@ GO
 -- uspReceiptCreate
 --   Type: procedure
 --   Tạo hóa đơn (header + detail) và tính tổng tiền; transaction đảm bảo nhất quán.
+-- Sửa lại thành tạo hóa đơn thôi sau đó insert chi tiết hóa đơn sau bằng 1 hàm khác
+-- Cho 1 hàm update chi tiết hóa đơn
 CREATE OR ALTER PROCEDURE dbo.uspReceiptCreate
   @BranchId INT,
   @CustomerId INT,
