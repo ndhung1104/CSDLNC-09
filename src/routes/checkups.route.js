@@ -49,7 +49,7 @@ router.post('/create', requireRole('RECEP', 'VET', 'MGR', 'DIRECTOR'), async (re
 });
 
 // View/Edit checkup
-router.get('/:id', requireRole('RECEP', 'VET', 'MGR', 'DIRECTOR'), async (req, res) => {
+router.get('/:id(\\d+)', requireRole('RECEP', 'VET', 'MGR', 'DIRECTOR'), async (req, res) => {
     try {
         const checkup = await checkupModel.getById(req.params.id);
         if (!checkup) return res.redirect('/checkups');
@@ -60,7 +60,7 @@ router.get('/:id', requireRole('RECEP', 'VET', 'MGR', 'DIRECTOR'), async (req, r
 });
 
 // Update checkup notes - Use Case 2
-router.post('/:id/update', requireRole('VET', 'MGR', 'DIRECTOR'), async (req, res) => {
+router.post('/:id(\\d+)/update', requireRole('VET', 'MGR', 'DIRECTOR'), async (req, res) => {
     const { symptoms, diagnosis, status } = req.body;
     try {
         await checkupModel.updateNotes({ checkupId: req.params.id, symptoms, diagnosis, status });

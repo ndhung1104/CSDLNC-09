@@ -23,9 +23,9 @@ export async function getAll({ vetId = null, status = null, page = 1, limit = 20
     if (vetId) query = query.where('CHECK_UP.VET_ID', vetId);
     if (status) query = query.where('CHECK_UP.STATUS', status);
 
-    const total = await query.clone().count('* as count').first();
+    const total = (await query.clone().clearSelect().clearOrder().count('* as count').first())?.count || 0;
     const checkups = await query.offset(offset).limit(limit);
-    return { checkups, total: total?.count || 0, page, limit };
+    return { checkups, total, page, limit };
 }
 
 // Get checkup by ID

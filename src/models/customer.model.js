@@ -17,7 +17,7 @@ export async function getAll({ search = '', page = 1, limit = 20, rankId = null 
             'CUSTOMER.CUSTOMER_EMAIL as email',
             'CUSTOMER.CUSTOMER_GENDER as gender',
             'CUSTOMER.CUSTOMER_LOYALTY as loyalty',
-            'MEMBERSHIP_RANK.MEMBERSHIP_RANK_NAME as membershipRank'
+            'MEMBERSHIP_RANK.MEMBERSHIP_RANK_NAME as rank'
         );
 
     // Filter by Rank
@@ -56,7 +56,7 @@ export async function getById(id) {
         .join('MEMBERSHIP_RANK', 'CUSTOMER.MEMBERSHIP_RANK_ID', 'MEMBERSHIP_RANK.MEMBERSHIP_RANK_ID')
         .select(
             'CUSTOMER.*',
-            'MEMBERSHIP_RANK.MEMBERSHIP_RANK_NAME as membershipRank'
+            'MEMBERSHIP_RANK.MEMBERSHIP_RANK_NAME as rank'
         )
         .where('CUSTOMER.CUSTOMER_ID', id)
         .first();
@@ -64,7 +64,7 @@ export async function getById(id) {
     if (!customer) return null;
 
     const pets = await db('PET')
-        .join('PET_BREED', 'PET.BREED_ID', 'PET_BREED.BREED_ID')
+        .join('PET_BREED', 'PET.PET_BREED_ID', 'PET_BREED.BREED_ID')
         .select('PET.*', 'PET_BREED.BREED_NAME as breedName', 'PET_BREED.TYPE_OF_PET as typeOfPet')
         .where('PET.CUSTOMER_ID', id);
 

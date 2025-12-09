@@ -19,7 +19,7 @@ router.get('/', requireRole('SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
 });
 
 // View plan detail
-router.get('/:id', requireRole('SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
+router.get('/:id(\\d+)', requireRole('SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
     try {
         const plan = await vaccinationModel.getById(req.params.id);
         if (!plan) return res.redirect('/vaccination-plans');
@@ -30,7 +30,7 @@ router.get('/:id', requireRole('SALES', 'MGR', 'DIRECTOR'), async (req, res) => 
 });
 
 // Purchase vaccination plan form - with pet dropdown
-router.get('/:id/purchase', requireRole('SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
+router.get('/:id(\\d+)/purchase', requireRole('SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
     try {
         const plan = await vaccinationModel.getById(req.params.id);
         if (!plan) return res.redirect('/vaccination-plans');
@@ -50,7 +50,7 @@ router.get('/:id/purchase', requireRole('SALES', 'MGR', 'DIRECTOR'), async (req,
 });
 
 // Purchase vaccination plan - Use Case 3
-router.post('/:id/purchase', requireRole('SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
+router.post('/:id(\\d+)/purchase', requireRole('SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
     const { petId } = req.body;
     const emp = req.session.employee;
     try {

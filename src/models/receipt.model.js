@@ -22,9 +22,9 @@ export async function getAll({ branchId = null, status = null, page = 1, limit =
     if (branchId) query = query.where('RECEIPT.BRANCH_ID', branchId);
     if (status) query = query.where('RECEIPT.RECEIPT_STATUS', status);
 
-    const total = await query.clone().count('* as count').first();
+    const total = (await query.clone().clearSelect().clearOrder().count('* as count').first())?.count || 0;
     const receipts = await query.offset(offset).limit(limit);
-    return { receipts, total: total?.count || 0, page, limit };
+    return { receipts, total, page, limit };
 }
 
 // Get receipt by ID with details

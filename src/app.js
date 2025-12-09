@@ -45,6 +45,7 @@ app.use('/receipts', receiptsRoutes);
 app.use('/vaccination-plans', vaccinationRoutes);
 app.use('/products', productsRoutes);
 app.use('/reports', reportsRoutes);
+app.use('/management', (await import('./routes/management.route.js')).default);
 app.use('/api', (await import('./routes/api.route.js')).default);
 
 app.use((err, req, res, _next) => {

@@ -1,27 +1,58 @@
-const express = require('express');
-const {
+import express from 'express';
+import {
   getManagementDashboardData,
   getManagementCustomersData,
-} = require('../services/demoData.service');
+  processYearEnd
+} from '../services/management.service.js';
+import { requireRole } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
-router.get('/dashboard', (_req, res) => {
-  const data = getManagementDashboardData();
-  res.render('management/dashboard', {
-    title: 'Dashboard',
-    activePage: 'dashboard',
-    ...data,
-  });
+router.get('/dashboard', requireRole('MGR', 'DIRECTOR'), async (req, res) => {
+  try {
+    // Assuming 'branchId' might come from MGR's session if they are Branch Manager
+    // Director sees all? The prompt implies Director sees "System wide", Branch Mgr sees "Branch".
+    // Let's check employee role.
+    const emp = req.session.employee;
+    const branchId = emp.role === 'MGR' ? emp.branchId : null; // Director (DIRECTOR) sees all (null)
+
+    const data = await getManagementDashboardData(branchId);
+    res.render('management/dashboard', {
+      title: 'Dashboard',
+      activePage: 'dashboard',
+      employee: emp,
+      ...data,
+    });
+  } catch (err) {
+    console.error(err);
+    res.render('error', { title: 'Error', message: err.message });
+  }
 });
 
-router.get('/customers', (_req, res) => {
-  const data = getManagementCustomersData();
-  res.render('management/customers', {
-    title: 'Customers',
-    activePage: 'customers',
-    ...data,
-  });
+router.get('/customers', requireRole('MGR', 'DIRECTOR'), async (req, res) => {
+  try {
+    const page = req.query.page || 1;
+    const data = await getManagementCustomersData(page);
+    res.render('management/customers', {
+      title: 'Customers',
+      activePage: 'customers',
+      employee: req.session.employee,
+      ...data,
+    });
+  } catch (err) {
+    console.error(err);
+    res.render('error', { title: 'Error', message: err.message });
+  }
 });
 
-module.exports = router;
+router.post('/year-end-process', requireRole('DIRECTOR'), async (req, res) => {
+  try {
+    const result = await processYearEnd();
+    res.json({ success: true, message: 'Year-end processing completed successfully', result });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+export default router;

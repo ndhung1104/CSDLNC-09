@@ -25,13 +25,13 @@ router.get('/', requireRole('RECEP', 'MGR', 'DIRECTOR', 'SALES', 'VET'), async (
     }
 });
 
-// Register form
-router.get('/register', requireRole('RECEP', 'MGR', 'DIRECTOR', 'SALES'), (req, res) => {
+// Create customer form
+router.get('/create', requireRole('RECEP', 'MGR', 'DIRECTOR', 'SALES'), (req, res) => {
     res.render('customers/register', { title: 'Đăng ký khách hàng', employee: req.session.employee, error: null });
 });
 
-// Register customer - Use Case 1
-router.post('/register', requireRole('RECEP', 'MGR', 'DIRECTOR', 'SALES'), async (req, res) => {
+// Create customer - Use Case 1
+router.post('/create', requireRole('RECEP', 'MGR', 'DIRECTOR', 'SALES'), async (req, res) => {
     const { name, phone, email, password, gender, birthdate } = req.body;
     try {
         const id = await customerModel.create({ name, phone, email, password, gender, birthdate });
@@ -43,7 +43,7 @@ router.post('/register', requireRole('RECEP', 'MGR', 'DIRECTOR', 'SALES'), async
 });
 
 // View customer detail
-router.get('/:id', requireRole('RECEP', 'MGR', 'DIRECTOR', 'SALES', 'VET'), async (req, res) => {
+router.get('/:id(\\d+)', requireRole('RECEP', 'MGR', 'DIRECTOR', 'SALES', 'VET'), async (req, res) => {
     try {
         const customer = await customerModel.getById(req.params.id);
         if (!customer) return res.redirect('/customers');

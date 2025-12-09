@@ -32,19 +32,32 @@ router.get('/create', requireRole('RECEP', 'MGR', 'DIRECTOR'), async (req, res) 
 
 // Create pet - Use Case 1
 router.post('/create', requireRole('RECEP', 'MGR', 'DIRECTOR'), async (req, res) => {
-    const { customerId, breedId, name, gender, weight } = req.body;
+    const { customerId, breedId, name, gender, healthStatus } = req.body;
     try {
-        await petModel.create({ customerId, breedId, name, gender, weight });
+        const customerIdInt = parseInt(customerId);
+        const breedIdInt = parseInt(breedId);
+
+        if (isNaN(customerIdInt) || isNaN(breedIdInt)) {
+            throw new Error('Vui lòng kiểm tra lại ID khách hàng và giống thú cưng.');
+        }
+
+        await petModel.create({
+            customerId: customerIdInt,
+            breedId: breedIdInt,
+            name,
+            gender,
+            healthStatus
+        });
         res.redirect(`/customers/${customerId}`);
     } catch (err) {
         console.error(err);
         const breeds = await petModel.getBreeds();
-        res.render('pets/create', { title: 'Thêm thú cưng', breeds, customerId, error: err.message, employee: req.session.employee });
+        res.render('pets/create', { title: 'Thêm thú cưng', breeds, customerId: customerId || '', error: err.message, employee: req.session.employee });
     }
 });
 
 // View pet detail
-router.get('/:id', requireRole('RECEP', 'VET', 'MGR', 'DIRECTOR', 'SALES'), async (req, res) => {
+router.get('/:id(\\d+)', requireRole('RECEP', 'VET', 'MGR', 'DIRECTOR', 'SALES'), async (req, res) => {
     try {
         const pet = await petModel.getById(req.params.id);
         if (!pet) return res.redirect('/pets');

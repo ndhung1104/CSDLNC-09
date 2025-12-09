@@ -53,7 +53,7 @@ export async function create({ customerId, breedId, name, gender, healthStatus =
     DECLARE @NewId INT;
     EXEC dbo.uspPetCreateForCustomer
       @CustomerId = ?,
-      @BreedId = ?,
+      @PetBreedId = ?,
       @PetName = ?,
       @PetGender = ?,
       @PetHealthStatus = ?,

@@ -43,7 +43,7 @@ router.post('/create', requireRole('RECEP', 'SALES', 'MGR', 'DIRECTOR'), async (
 });
 
 // View receipt
-router.get('/:id', requireRole('RECEP', 'SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
+router.get('/:id(\\d+)', requireRole('RECEP', 'SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
     try {
         const receipt = await receiptModel.getById(req.params.id);
         if (!receipt) return res.redirect('/receipts');
@@ -54,7 +54,7 @@ router.get('/:id', requireRole('RECEP', 'SALES', 'MGR', 'DIRECTOR'), async (req,
 });
 
 // Complete receipt - Use Case 2 (payment and loyalty points)
-router.post('/:id/complete', requireRole('RECEP', 'SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
+router.post('/:id(\\d+)/complete', requireRole('RECEP', 'SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
     try {
         await receiptModel.complete(req.params.id);
         res.redirect(`/receipts/${req.params.id}?success=Thanh+toán+thành+công`);

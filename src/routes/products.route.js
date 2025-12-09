@@ -19,7 +19,7 @@ router.get('/', requireRole('SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
 });
 
 // View product detail
-router.get('/:id', requireRole('SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
+router.get('/:id(\\d+)', requireRole('SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
     try {
         const product = await productModel.getById(req.params.id);
         if (!product) return res.redirect('/products');
@@ -30,7 +30,7 @@ router.get('/:id', requireRole('SALES', 'MGR', 'DIRECTOR'), async (req, res) => 
 });
 
 // Purchase product form - with customer dropdown
-router.get('/:id/purchase', requireRole('SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
+router.get('/:id(\\d+)/purchase', requireRole('SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
     try {
         const product = await productModel.getById(req.params.id);
         if (!product) return res.redirect('/products');
@@ -50,7 +50,7 @@ router.get('/:id/purchase', requireRole('SALES', 'MGR', 'DIRECTOR'), async (req,
 });
 
 // Retail purchase - Use Case 4
-router.post('/:id/purchase', requireRole('SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
+router.post('/:id(\\d+)/purchase', requireRole('SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
     const { customerId, quantity } = req.body;
     const emp = req.session.employee;
     try {
