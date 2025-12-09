@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head><%- include('../partials/common/head') %>
+        <link rel="stylesheet" href="/css/management-styles.css">
+</head>
+
+<body>
+    <div class="app-wrapper">
+        <%- include('../partials/management/navbar') %>
+            <div class="d-flex flex-grow-1">
+                <%- include('../partials/management/sidebar') %>
+                    <main class="flex-grow-1 p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h1 class="h3 mb-0">
+                                <%= customer.CUSTOMER_NAME %>
+                            </h1>
+                            <div>
+                                <a href="/pets/create?customerId=<%= customer.CUSTOMER_ID %>" class="btn btn-success"><i
+                                        class="bi bi-plus-lg me-2"></i>Thêm thú cưng</a>
+                                <a href="/receipts/create?customerId=<%= customer.CUSTOMER_ID %>"
+                                    class="btn btn-primary ms-2"><i class="bi bi-receipt me-2"></i>Tạo hóa đơn</a>
+                            </div>
+                        </div>
+
+                        <div class="row g-4">
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-header">Thông tin khách hàng</div>
+                                    <div class="card-body">
+                                        <p><strong>ID:</strong>
+                                            <%= customer.CUSTOMER_ID %>
+                                        </p>
+                                        <p><strong>SĐT:</strong>
+                                            <%= customer.CUSTOMER_PHONE || '-' %>
+                                        </p>
+                                        <p><strong>Email:</strong>
+                                            <%= customer.CUSTOMER_EMAIL %>
+                                        </p>
+                                        <p><strong>Giới tính:</strong>
+                                            <%= customer.CUSTOMER_GENDER %>
+                                        </p>
+                                        <p><strong>Hạng:</strong> <span class="badge bg-info">
+                                                <%= customer.membershipRank %>
+                                            </span></p>
+                                        <p><strong>Điểm tích lũy:</strong>
+                                            <%= customer.CUSTOMER_LOYALTY %>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-8">
+                                <div class="card">
+                                    <div class="card-header">Thú cưng (<%= customer.pets?.length || 0 %>)</div>
+                                    <div class="table-responsive">
+                                        <table class="table mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>Tên</th>
+                                                    <th>Giống</th>
+                                                    <th>Loại</th>
+                                                    <th>Giới tính</th>
+                                                    <th></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <% if (!customer.pets || customer.pets.length===0) { %>
+                                                    <tr>
+                                                        <td colspan="6" class="text-center text-muted py-3">Chưa có thú
+                                                            cưng</td>
+                                                    </tr>
+                                                    <% } else { customer.pets.forEach(p=> { %>
+                                                        <tr>
+                                                            <td>
+                                                                <%= p.PET_ID %>
+                                                            </td>
+                                                            <td><strong>
+                                                                    <%= p.PET_NAME %>
+                                                                </strong></td>
+                                                            <td>
+                                                                <%= p.breedName %>
+                                                            </td>
+                                                            <td>
+                                                                <%= p.typeOfPet %>
+                                                            </td>
+                                                            <td>
+                                                                <%= p.PET_GENDER %>
+                                                            </td>
+                                                            <td><a href="/pets/<%= p.PET_ID %>"
+                                                                    class="btn btn-sm btn-outline-primary">Chi tiết</a>
+                                                            </td>
+                                                        </tr>
+                                                        <% }) } %>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+            </div>
+    </div>
+    <%- include('../partials/common/scripts') %>
+</body>
+
+</html>

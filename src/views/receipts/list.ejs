@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head><%- include('../partials/common/head') %>
+        <link rel="stylesheet" href="/css/management-styles.css">
+</head>
+
+<body>
+    <div class="app-wrapper">
+        <%- include('../partials/management/navbar') %>
+            <div class="d-flex flex-grow-1">
+                <%- include('../partials/management/sidebar') %>
+                    <main class="flex-grow-1 p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h1 class="h3 mb-0">
+                                <%= title %>
+                            </h1>
+                            <a href="/receipts/create" class="btn btn-primary"><i class="bi bi-plus-lg me-2"></i>Tạo hóa
+                                đơn</a>
+                        </div>
+                        <div class="card">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Ngày</th>
+                                            <th>Khách hàng</th>
+                                            <th>Chi nhánh</th>
+                                            <th>Tổng</th>
+                                            <th>Trạng thái</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <% if (receipts.length===0) { %>
+                                            <tr>
+                                                <td colspan="7" class="text-center text-muted py-4">Chưa có hóa đơn</td>
+                                            </tr>
+                                            <% } else { receipts.forEach(r=> { %>
+                                                <tr>
+                                                    <td>
+                                                        <%= r.id %>
+                                                    </td>
+                                                    <td>
+                                                        <%= new Date(r.date).toLocaleDateString('vi-VN') %>
+                                                    </td>
+                                                    <td><a href="/customers/<%= r.customerId %>">
+                                                            <%= r.customerName || '-' %>
+                                                        </a></td>
+                                                    <td>
+                                                        <%= r.branchName %>
+                                                    </td>
+                                                    <td>
+                                                        <%= (r.total || 0).toLocaleString('vi-VN') %>đ
+                                                    </td>
+                                                    <td><span
+                                                            class="badge bg-<%= r.status === 'Đã hoàn thành' ? 'success' : 'warning' %>">
+                                                            <%= r.status %>
+                                                        </span></td>
+                                                    <td><a href="/receipts/<%= r.id %>"
+                                                            class="btn btn-sm btn-outline-primary">Chi tiết</a></td>
+                                                </tr>
+                                                <% }) } %>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </main>
+            </div>
+    </div>
+    <%- include('../partials/common/scripts') %>
+</body>
+
+</html>

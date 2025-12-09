@@ -225,7 +225,8 @@ INSERT INTO EMPLOYEE (
 ('012345678911', N'Quản lý chi nhánh Q1',       N'Nam', '1980-01-01', 'emp11@petcarex.com', 'emp_pwd_0000000011', '2010-01-01', 25000000, 'MGR',   1),
 ('012345678912', N'Quản lý chi nhánh Thủ Đức',  N'Nữ',  '1982-05-05', 'emp12@petcarex.com', 'emp_pwd_0000000012', '2012-04-01', 24000000, 'MGR',   2),
 ('012345678913', N'Quản lý chi nhánh Bình Thạnh', N'Nam','1979-08-15', 'emp13@petcarex.com', 'emp_pwd_0000000013', '2011-07-01', 24500000, 'MGR', 3),
-('012345678914', N'Quản lý chi nhánh Tân Bình', N'Nữ',  '1983-09-25', 'emp14@petcarex.com', 'emp_pwd_0000000014', '2013-09-01', 24500000, 'MGR', 4);
+('012345678914', N'Quản lý chi nhánh Tân Bình', N'Nữ',  '1983-09-25', 'emp14@petcarex.com', 'emp_pwd_0000000014', '2013-09-01', 24500000, 'MGR', 4),
+('012345678915', N'Giám đốc vận hành', N'Nam', '1975-03-15', 'director@petcarex.com', 'director_pwd_001', '2008-01-01', 50000000, 'DIRECTOR', 1);
 GO
 
 /* ==========================================

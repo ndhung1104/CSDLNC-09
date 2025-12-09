@@ -1,19 +1,21 @@
 {
-  "name": "petcarex",
-  "version": "1.0.0",
-  "description": "PETCAREX - Express + Handlebars demo site split from the provided template.",
-  "main": "app.js",
-  "scripts": {
-    "start": "nodemon app.js",
-    "dev": "nodemon app.js"
-  },
-  "dependencies": {
-    "express": "^4.19.2",
-    "ejs": "^3.1.9",
-    "knex": "^3.1.0",
-    "mssql": "^11.3.1"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.0"
-  }
+    "name": "petcarex",
+    "version": "1.0.0",
+    "type": "module",
+    "description": "PetCareX - Staff management system for veterinary clinics",
+    "main": "app.js",
+    "scripts": {
+        "start": "node app.js",
+        "dev": "nodemon app.js"
+    },
+    "dependencies": {
+        "express": "^4.19.2",
+        "express-session": "^1.18.0",
+        "ejs": "^3.1.9",
+        "knex": "^3.1.0",
+        "tedious": "^18.6.1"
+    },
+    "devDependencies": {
+        "nodemon": "^3.1.0"
+    }
 }

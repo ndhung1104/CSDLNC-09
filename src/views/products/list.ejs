@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head><%- include('../partials/common/head') %>
+        <link rel="stylesheet" href="/css/management-styles.css">
+</head>
+
+<body>
+    <div class="app-wrapper">
+        <%- include('../partials/management/navbar') %>
+            <div class="d-flex flex-grow-1">
+                <%- include('../partials/management/sidebar') %>
+                    <main class="flex-grow-1 p-4">
+                        <h1 class="h3 mb-4">
+                            <%= title %>
+                        </h1>
+                        <form class="mb-4" method="GET">
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="search" placeholder="Tìm sản phẩm..."
+                                    value="<%= search || '' %>">
+                                <button class="btn btn-outline-secondary" type="submit"><i
+                                        class="bi bi-search"></i></button>
+                            </div>
+                        </form>
+                        <% if (error) { %>
+                            <div class="alert alert-danger">
+                                <%= error %>
+                            </div>
+                            <% } %>
+                                <div class="card">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>Tên</th>
+                                                    <th>Giá</th>
+                                                    <th>Tồn kho</th>
+                                                    <th></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <% if (products.length===0) { %>
+                                                    <tr>
+                                                        <td colspan="5" class="text-center text-muted py-4">Không có sản
+                                                            phẩm</td>
+                                                    </tr>
+                                                    <% } else { products.forEach(p=> { %>
+                                                        <tr>
+                                                            <td>
+                                                                <%= p.id %>
+                                                            </td>
+                                                            <td><strong>
+                                                                    <%= p.name %>
+                                                                </strong></td>
+                                                            <td>
+                                                                <%= (p.price || 0).toLocaleString('vi-VN') %>đ
+                                                            </td>
+                                                            <td>
+                                                                <%= p.stock || 0 %>
+                                                            </td>
+                                                            <td>
+                                                                <a href="/products/<%= p.id %>"
+                                                                    class="btn btn-sm btn-outline-primary me-1">Chi
+                                                                    tiết</a>
+                                                                <a href="/products/<%= p.id %>/purchase"
+                                                                    class="btn btn-sm btn-primary">Mua</a>
+                                                            </td>
+                                                        </tr>
+                                                        <% }) } %>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <!-- Pagination -->
+                                <% if (totalPages> 1) { %>
+                                    <nav class="mt-4">
+                                        <ul class="pagination justify-content-center">
+                                            <li class="page-item <%= page <= 1 ? 'disabled' : '' %>">
+                                                <a class="page-link"
+                                                    href="?search=<%= search || '' %>&page=<%= page - 1 %>">Trước</a>
+                                            </li>
+                                            <% for (let i=1; i <=Math.min(totalPages, 10); i++) { %>
+                                                <li class="page-item <%= i === page ? 'active' : '' %>">
+                                                    <a class="page-link"
+                                                        href="?search=<%= search || '' %>&page=<%= i %>">
+                                                        <%= i %>
+                                                    </a>
+                                                </li>
+                                                <% } %>
+                                                    <li class="page-item <%= page >= totalPages ? 'disabled' : '' %>">
+                                                        <a class="page-link"
+                                                            href="?search=<%= search || '' %>&page=<%= page + 1 %>">Tiếp</a>
+                                                    </li>
+                                        </ul>
+                                    </nav>
+                                    <% } %>
+                    </main>
+            </div>
+    </div>
+    <%- include('../partials/common/scripts') %>
+</body>
+
+</html>

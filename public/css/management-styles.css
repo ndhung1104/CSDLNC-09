@@ -1,0 +1,130 @@
+/* Gold Luxury Theme */
+:root {
+    --gold-primary: #D4AF37;
+    --gold-accent: #FFD700;
+    --gold-dark: #B8860B;
+    --dark-bg: #121212;
+    --sidebar-bg: #1e1e1e;
+    --sidebar-active: #2c2c2c;
+    --text-light: #ececec;
+    --text-muted: #a0a0a0;
+}
+
+body {
+    background-color: #f4f6f9;
+    /* Light background for content area */
+    font-family: 'Inter', sans-serif;
+}
+
+/* Navbar Styling */
+.navbar-custom {
+    background-color: var(--sidebar-bg);
+    /* Match sidebar */
+    border-bottom: 1px solid var(--gold-dark);
+    /* Gold accent */
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.navbar-brand {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    color: white !important;
+    font-size: 1.5rem;
+    letter-spacing: 1px;
+}
+
+/* Sidebar Styling */
+.sidebar {
+    background-color: var(--sidebar-bg);
+    min-width: 260px;
+    max-width: 260px;
+    min-height: 100vh;
+    box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar .nav-link {
+    color: var(--text-muted);
+    font-weight: 500;
+    padding: 12px 20px;
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+}
+
+.sidebar .nav-link:hover {
+    color: var(--gold-accent);
+    background-color: rgba(255, 215, 0, 0.05);
+}
+
+.sidebar .nav-link.active {
+    color: var(--gold-primary);
+    background-color: var(--sidebar-active);
+    border-left-color: var(--gold-primary);
+    font-weight: 600;
+}
+
+.sidebar .nav-link i {
+    width: 24px;
+    text-align: center;
+}
+
+/* Card Styling */
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    background-color: white;
+    border-bottom: 2px solid #f0f0f0;
+    font-weight: 600;
+    padding: 1.25rem;
+    color: var(--dark-bg);
+}
+
+.card-header.bg-primary {
+    background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold-primary) 100%) !important;
+    color: white !important;
+    border: none;
+}
+
+/* Button Styling */
+.btn-primary {
+    background-color: var(--gold-dark);
+    border-color: var(--gold-dark);
+}
+
+.btn-primary:hover {
+    background-color: var(--gold-primary);
+    border-color: var(--gold-primary);
+}
+
+.btn-outline-primary {
+    color: var(--gold-dark);
+    border-color: var(--gold-dark);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--gold-dark);
+    color: white;
+}
+
+.text-primary {
+    color: var(--gold-dark) !important;
+}
+
+/* Pagination */
+.page-link {
+    color: var(--gold-dark);
+}
+
+.page-item.active .page-link {
+    background-color: var(--gold-dark);
+    border-color: var(--gold-dark);
+}

@@ -1,105 +1,80 @@
-<aside class="sidebar d-none d-lg-flex flex-column p-3">
-  <nav>
-    <div class="nav-category">Overview</div>
-    <ul class="nav flex-column mb-2">
-      <li class="nav-item">
-        <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'dashboard' ? 'active' : '' %>" href="/management/dashboard">
-          <i class="bi bi-speedometer2 me-2"></i>
-          Dashboard
-        </a>
-      </li>
-    </ul>
+<aside class="sidebar d-flex flex-column flex-shrink-0 bg-dark text-white">
+    <div class="sidebar-sticky pt-3">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link <%= title === 'Bảng điều khiển' ? 'active' : '' %>" href="/dashboard">
+                    <i class="bi bi-house-door me-3"></i> Bảng điều khiển
+                </a>
+            </li>
 
-    <div class="nav-category">Customers &amp; Pets</div>
-    <ul class="nav flex-column mb-2">
-      <li class="nav-item">
-        <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'customers' ? 'active' : '' %>" href="/management/customers">
-          <i class="bi bi-people me-2"></i>
-          Customers
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'pets' ? 'active' : '' %>" href="/management/pets">
-          <i class="bi bi-heart-pulse me-2"></i>
-          Pets
-        </a>
-      </li>
-    </ul>
+            <% const pos=typeof employee !=='undefined' ? employee.position : '' ; %>
 
-    <div class="nav-category">Operations</div>
-    <ul class="nav flex-column mb-2">
-      <li class="nav-item">
-        <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'appointments' ? 'active' : '' %>" href="/management/appointments">
-          <i class="bi bi-calendar-event me-2"></i>
-          Appointments
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'branches' ? 'active' : '' %>" href="/management/branches">
-          <i class="bi bi-building me-2"></i>
-          Branches
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'employees' ? 'active' : '' %>" href="/management/employees">
-          <i class="bi bi-person-badge me-2"></i>
-          Employees
-        </a>
-      </li>
-    </ul>
+                <!-- SALES/MGR/DIRECTOR -->
+                <% if (['SALES', 'MGR' , 'DIRECTOR' ].includes(pos)) { %>
+                    <li class="nav-item">
+                        <a class="nav-link <%= title.includes('Sản phẩm') || title.includes('Mua') ? 'active' : '' %>"
+                            href="/products">
+                            <i class="bi bi-box-seam me-3"></i> Sản phẩm
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <%= title.includes('Gói tiêm phòng') ? 'active' : '' %>"
+                            href="/vaccination-plans">
+                            <i class="bi bi-shield-check me-3"></i> Gói tiêm phòng
+                        </a>
+                    </li>
+                    <% } %>
 
-    <div class="nav-category">Services &amp; Products</div>
-    <ul class="nav flex-column mb-2">
-      <li class="nav-item">
-        <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'services' ? 'active' : '' %>" href="/management/services">
-          <i class="bi bi-clipboard2-pulse me-2"></i>
-          Services
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'products' ? 'active' : '' %>" href="/management/products">
-          <i class="bi bi-bag me-2"></i>
-          Products
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'stock' ? 'active' : '' %>" href="/management/stock">
-          <i class="bi bi-box-seam me-2"></i>
-          Stock
-        </a>
-      </li>
-    </ul>
+                        <!-- RECEP/SALES/MGR/DIRECTOR/VET -->
+                        <% if (['RECEP', 'SALES' , 'MGR' , 'DIRECTOR' , 'VET' ].includes(pos)) { %>
+                            <li class="nav-item">
+                                <a class="nav-link <%= title === 'Khách hàng' ? 'active' : '' %>" href="/customers">
+                                    <i class="bi bi-people me-3"></i> Khách hàng
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link <%= title === 'Thú cưng' ? 'active' : '' %>" href="/pets">
+                                    <i class="bi bi-heart me-3"></i> Thú cưng
+                                </a>
+                            </li>
+                            <% } %>
 
-    <div class="nav-category">Medical</div>
-    <ul class="nav flex-column mb-2">
-      <li class="nav-item">
-        <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'medical' ? 'active' : '' %>" href="/management/medical">
-          <i class="bi bi-hospital me-2"></i>
-          Medical Records
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'vaccination' ? 'active' : '' %>" href="/management/vaccination">
-          <i class="bi bi-shield-plus me-2"></i>
-          Vaccination
-        </a>
-      </li>
-    </ul>
+                                <!-- RECEP/VET/MGR/DIRECTOR -->
+                                <% if (['RECEP', 'VET' , 'MGR' , 'DIRECTOR' ].includes(pos)) { %>
+                                    <li class="nav-item">
+                                        <a class="nav-link <%= title.includes('Phiếu khám') ? 'active' : '' %>"
+                                            href="/checkups">
+                                            <i class="bi bi-clipboard2-pulse me-3"></i> Phiếu khám
+                                        </a>
+                                    </li>
+                                    <% } %>
 
-    <div class="nav-category">Financial</div>
-    <ul class="nav flex-column mb-2">
-      <li class="nav-item">
-        <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'receipts' ? 'active' : '' %>" href="/management/receipts">
-          <i class="bi bi-receipt me-2"></i>
-          Receipts
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'reviews' ? 'active' : '' %>" href="/management/reviews">
-          <i class="bi bi-chat-square-heart me-2"></i>
-          Reviews
-        </a>
-      </li>
-    </ul>
-  </nav>
+                                        <!-- RECEP/SALES/MGR/DIRECTOR -->
+                                        <% if (['RECEP', 'SALES' , 'MGR' , 'DIRECTOR' ].includes(pos)) { %>
+                                            <li class="nav-item">
+                                                <a class="nav-link <%= title.includes('Hóa đơn') ? 'active' : '' %>"
+                                                    href="/receipts">
+                                                    <i class="bi bi-receipt me-3"></i> Hóa đơn
+                                                </a>
+                                            </li>
+                                            <% } %>
+
+                                                <!-- MGR/DIRECTOR -->
+                                                <% if (['MGR', 'DIRECTOR' ].includes(pos)) { %>
+                                                    <li class="nav-item mt-3">
+                                                        <span class="text-uppercase text-muted fw-bold px-3 small">Báo
+                                                            cáo</span>
+                                                    </li>
+                                                    <li class="nav-item">
+                                                        <a class="nav-link <%= title.includes('Báo cáo') ? 'active' : '' %>"
+                                                            href="/reports/daily">
+                                                            <i class="bi bi-graph-up me-3"></i> Báo cáo ngày
+                                                        </a>
+                                                    </li>
+                                                    <% } %>
+        </ul>
+    </div>
+    <div class="mt-auto p-3 text-muted small border-top border-secondary">
+        PetCareX v1.0 <br> &copy; 2024
+    </div>
 </aside>

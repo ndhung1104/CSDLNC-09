@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head><%- include('../partials/common/head') %>
+        <link rel="stylesheet" href="/css/management-styles.css">
+</head>
+
+<body>
+    <div class="app-wrapper">
+        <%- include('../partials/management/navbar') %>
+            <div class="d-flex flex-grow-1">
+                <%- include('../partials/management/sidebar') %>
+                    <main class="flex-grow-1 p-4">
+                        <h1 class="h3 mb-4">
+                            <%= title %>
+                        </h1>
+
+                        <% if (error) { %>
+                            <div class="alert alert-danger">
+                                <%= error %>
+                            </div>
+                            <% } %>
+
+                                <div class="card">
+                                    <div class="card-body">
+                                        <form method="POST" action="/customers/register">
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Họ tên <span
+                                                            class="text-danger">*</span></label>
+                                                    <input type="text" class="form-control" name="name" required>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Số điện thoại</label>
+                                                    <input type="tel" class="form-control" name="phone" maxlength="10">
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Email <span
+                                                            class="text-danger">*</span></label>
+                                                    <input type="email" class="form-control" name="email" required>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Mật khẩu <span
+                                                            class="text-danger">*</span></label>
+                                                    <input type="password" class="form-control" name="password"
+                                                        required>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Giới tính <span
+                                                            class="text-danger">*</span></label>
+                                                    <select class="form-select" name="gender" required>
+                                                        <option value="Nam">Nam</option>
+                                                        <option value="Nữ">Nữ</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Ngày sinh</label>
+                                                    <input type="date" class="form-control" name="birthdate">
+                                                </div>
+                                            </div>
+                                            <div class="mt-4">
+                                                <button type="submit" class="btn btn-primary"><i
+                                                        class="bi bi-check-lg me-2"></i>Đăng ký</button>
+                                                <a href="/customers" class="btn btn-outline-secondary ms-2">Hủy</a>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                    </main>
+            </div>
+    </div>
+    <%- include('../partials/common/scripts') %>
+</body>
+
+</html>

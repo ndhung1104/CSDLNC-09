@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head><%- include('../partials/common/head') %>
+        <link rel="stylesheet" href="/css/management-styles.css">
+</head>
+
+<body>
+    <div class="app-wrapper">
+        <%- include('../partials/management/navbar') %>
+            <div class="d-flex flex-grow-1">
+                <%- include('../partials/management/sidebar') %>
+                    <main class="flex-grow-1 p-4">
+                        <h1 class="h3 mb-4">
+                            <%= product.name %>
+                        </h1>
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">Thông tin sản phẩm</div>
+                                    <div class="card-body">
+                                        <p><strong>ID:</strong>
+                                            <%= product.id %>
+                                        </p>
+                                        <p><strong>Giá:</strong> <span class="fs-4 fw-bold text-primary">
+                                                <%= (product.price || 0).toLocaleString('vi-VN') %>đ
+                                            </span></p>
+                                        <a href="/products/<%= product.id %>/purchase" class="btn btn-primary mt-3">Mua
+                                            sản phẩm</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">Tồn kho theo chi nhánh</div>
+                                    <div class="table-responsive">
+                                        <table class="table mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>Chi nhánh</th>
+                                                    <th>Số lượng</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <% if (!product.stocks || product.stocks.length===0) { %>
+                                                    <tr>
+                                                        <td colspan="2" class="text-muted text-center">Không có dữ liệu
+                                                        </td>
+                                                    </tr>
+                                                    <% } else { product.stocks.forEach(s=> { %>
+                                                        <tr>
+                                                            <td>
+                                                                <%= s.branchName %>
+                                                            </td>
+                                                            <td>
+                                                                <%= s.quantity %>
+                                                            </td>
+                                                        </tr>
+                                                        <% }) } %>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+            </div>
+    </div>
+    <%- include('../partials/common/scripts') %>
+</body>
+
+</html>

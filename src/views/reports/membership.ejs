@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head><%- include('../partials/common/head') %>
+        <link rel="stylesheet" href="/css/management-styles.css">
+</head>
+
+<body>
+    <div class="app-wrapper">
+        <%- include('../partials/management/navbar') %>
+            <div class="d-flex flex-grow-1">
+                <%- include('../partials/management/sidebar') %>
+                    <main class="flex-grow-1 p-4">
+                        <h1 class="h3 mb-4">
+                            <%= title %>
+                        </h1>
+
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <form method="POST" class="row g-3 align-items-end">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Năm xét duyệt</label>
+                                        <input type="number" class="form-control" name="year"
+                                            value="<%= selectedYear %>" min="2020" max="2030" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <button type="submit" class="btn btn-warning w-100">
+                                            <i class="bi bi-play-circle me-2"></i>Chạy tổng kết năm
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <% if (error) { %>
+                            <div class="alert alert-danger">
+                                <%= error %>
+                            </div>
+                            <% } %>
+
+                                <% if (result) { %>
+                                    <div class="row g-4 mb-4">
+                                        <div class="col-md-4">
+                                            <div class="card bg-success text-white">
+                                                <div class="card-body text-center">
+                                                    <h2 class="mb-0">
+                                                        <%= result.summary.totalUpgrades %>
+                                                    </h2>
+                                                    <small><i class="bi bi-arrow-up-circle me-1"></i>Thăng hạng</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="card bg-warning text-dark">
+                                                <div class="card-body text-center">
+                                                    <h2 class="mb-0">
+                                                        <%= result.summary.totalMaintained %>
+                                                    </h2>
+                                                    <small><i class="bi bi-dash-circle me-1"></i>Giữ hạng</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="card bg-danger text-white">
+                                                <div class="card-body text-center">
+                                                    <h2 class="mb-0">
+                                                        <%= result.summary.totalDowngrades %>
+                                                    </h2>
+                                                    <small><i class="bi bi-arrow-down-circle me-1"></i>Giảm hạng</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row g-4">
+                                        <div class="col-md-4">
+                                            <div class="card">
+                                                <div class="card-header bg-success text-white">Thăng hạng (<%=
+                                                        result.upgrades.length %>)</div>
+                                                <div class="table-responsive"
+                                                    style="max-height: 300px; overflow-y: auto;">
+                                                    <table class="table table-sm mb-0">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Khách hàng</th>
+                                                                <th>Hạng mới</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <% if (result.upgrades.length===0) { %>
+                                                                <tr>
+                                                                    <td colspan="2" class="text-muted text-center">Không
+                                                                        có</td>
+                                                                </tr>
+                                                                <% } else { result.upgrades.forEach(c=> { %>
+                                                                    <tr>
+                                                                        <td>
+                                                                            <%= c.CUSTOMER_NAME %>
+                                                                        </td>
+                                                                        <td>
+                                                                            <%= c.NewRank || c.MEMBERSHIP_RANK_NAME %>
+                                                                        </td>
+                                                                    </tr>
+                                                                    <% }) } %>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="card">
+                                                <div class="card-header bg-warning">Giữ hạng (<%=
+                                                        result.maintained.length %>)</div>
+                                                <div class="table-responsive"
+                                                    style="max-height: 300px; overflow-y: auto;">
+                                                    <table class="table table-sm mb-0">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Khách hàng</th>
+                                                                <th>Hạng</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <% if (result.maintained.length===0) { %>
+                                                                <tr>
+                                                                    <td colspan="2" class="text-muted text-center">Không
+                                                                        có</td>
+                                                                </tr>
+                                                                <% } else { result.maintained.forEach(c=> { %>
+                                                                    <tr>
+                                                                        <td>
+                                                                            <%= c.CUSTOMER_NAME %>
+                                                                        </td>
+                                                                        <td>
+                                                                            <%= c.MEMBERSHIP_RANK_NAME %>
+                                                                        </td>
+                                                                    </tr>
+                                                                    <% }) } %>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="card">
+                                                <div class="card-header bg-danger text-white">Giảm hạng (<%=
+                                                        result.downgrades.length %>)</div>
+                                                <div class="table-responsive"
+                                                    style="max-height: 300px; overflow-y: auto;">
+                                                    <table class="table table-sm mb-0">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Khách hàng</th>
+                                                                <th>Hạng mới</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <% if (result.downgrades.length===0) { %>
+                                                                <tr>
+                                                                    <td colspan="2" class="text-muted text-center">Không
+                                                                        có</td>
+                                                                </tr>
+                                                                <% } else { result.downgrades.forEach(c=> { %>
+                                                                    <tr>
+                                                                        <td>
+                                                                            <%= c.CUSTOMER_NAME %>
+                                                                        </td>
+                                                                        <td>
+                                                                            <%= c.NewRank || c.MEMBERSHIP_RANK_NAME %>
+                                                                        </td>
+                                                                    </tr>
+                                                                    <% }) } %>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <% } else { %>
+                                        <div class="alert alert-info">
+                                            <i class="bi bi-info-circle me-2"></i>
+                                            Chọn năm và nhấn "Chạy tổng kết năm" để xét duyệt hạng hội viên.
+                                        </div>
+                                        <% } %>
+                    </main>
+            </div>
+    </div>
+    <%- include('../partials/common/scripts') %>
+</body>
+
+</html>

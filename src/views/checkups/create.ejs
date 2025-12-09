@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head><%- include('../partials/common/head') %>
+        <link rel="stylesheet" href="/css/management-styles.css">
+</head>
+
+<body>
+    <div class="app-wrapper">
+        <%- include('../partials/management/navbar') %>
+            <div class="d-flex flex-grow-1">
+                <%- include('../partials/management/sidebar') %>
+                    <main class="flex-grow-1 p-4">
+                        <h1 class="h3 mb-4">
+                            <%= title %>
+                        </h1>
+                        <% if (error) { %>
+                            <div class="alert alert-danger">
+                                <%= error %>
+                            </div>
+                            <% } %>
+                                <div class="card">
+                                    <div class="card-body">
+                                        <form method="POST" action="/checkups/create">
+                                            <div class="row g-3">
+                                                <!-- Pet Autocomplete -->
+                                                <div class="col-md-6 position-relative">
+                                                    <label class="form-label">Thú cưng <span
+                                                            class="text-danger">*</span></label>
+                                                    <input type="text" class="form-control" id="petSearch"
+                                                        placeholder="Nhập tên thú cưng hoặc chủ sở hữu..."
+                                                        autocomplete="off">
+                                                    <input type="hidden" name="petId" id="petId"
+                                                        value="<%= petId || '' %>" required>
+                                                    <div id="petResults"
+                                                        class="list-group position-absolute w-100 shadow mt-1"
+                                                        style="z-index: 1000; display: none; max-height: 200px; overflow-y: auto;">
+                                                    </div>
+                                                    <div id="selectedPetInfo" class="form-text text-success"
+                                                        style="display: none;"><i class="bi bi-check-circle me-1"></i>Đã
+                                                        chọn: <span id="petNameDisplay"></span></div>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Bác sĩ <span
+                                                            class="text-danger">*</span></label>
+                                                    <select class="form-select" name="vetId" required>
+                                                        <option value="">-- Chọn bác sĩ --</option>
+                                                        <% vets.forEach(v=> { %>
+                                                            <option value="<%= v.id %>">
+                                                                <%= v.name %>
+                                                            </option>
+                                                            <% }) %>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-12">
+                                                    <label class="form-label">Dịch vụ khám</label>
+                                                    <select class="form-select" name="medicalServiceId">
+                                                        <% if (medicalServices && medicalServices.length> 0) { %>
+                                                            <% medicalServices.forEach(s=> { %>
+                                                                <option value="<%= s.id %>">
+                                                                    <%= s.name %> - <%= (s.fee ||
+                                                                            0).toLocaleString('vi-VN') %>đ
+                                                                </option>
+                                                                <% }) %>
+                                                                    <% } else { %>
+                                                                        <option value="1">Khám bệnh cơ bản</option>
+                                                                        <% } %>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="mt-4">
+                                                <button type="submit" class="btn btn-primary">Tạo phiếu khám</button>
+                                                <a href="/checkups" class="btn btn-outline-secondary ms-2">Hủy</a>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                    </main>
+            </div>
+    </div>
+    <%- include('../partials/common/scripts') %>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const searchInput = document.getElementById('petSearch');
+                const resultsDiv = document.getElementById('petResults');
+                const hiddenInput = document.getElementById('petId');
+                const selectedInfo = document.getElementById('selectedPetInfo');
+                const nameDisplay = document.getElementById('petNameDisplay');
+                let debounceTimer;
+
+                searchInput.addEventListener('input', function () {
+                    const query = this.value;
+                    if (!query) {
+                        resultsDiv.style.display = 'none';
+                        return;
+                    }
+
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(() => {
+                        fetch(`/api/pets?q=${encodeURIComponent(query)}`)
+                            .then(res => res.json())
+                            .then(data => {
+                                resultsDiv.innerHTML = '';
+                                if (data.length === 0) {
+                                    const item = document.createElement('div');
+                                    item.className = 'list-group-item text-muted';
+                                    item.textContent = 'Không tìm thấy thú cưng';
+                                    resultsDiv.appendChild(item);
+                                } else {
+                                    data.forEach(p => {
+                                        const item = document.createElement('a');
+                                        item.className = 'list-group-item list-group-item-action';
+                                        item.href = '#';
+                                        item.innerHTML = `<div><strong>${p.name}</strong> (${p.breedName})</div><small class="text-muted">Chủ: ${p.ownerName}</small>`;
+                                        item.addEventListener('click', (e) => {
+                                            e.preventDefault();
+                                            searchInput.value = p.name;
+                                            hiddenInput.value = p.id;
+                                            nameDisplay.textContent = `${p.name} - Chủ: ${p.ownerName}`;
+                                            selectedInfo.style.display = 'block';
+                                            resultsDiv.style.display = 'none';
+                                        });
+                                        resultsDiv.appendChild(item);
+                                    });
+                                }
+                                resultsDiv.style.display = 'block';
+                            });
+                    }, 300);
+                });
+
+                // Hide results when clicking outside
+                document.addEventListener('click', function (e) {
+                    if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
+                        resultsDiv.style.display = 'none';
+                    }
+                });
+
+                // Allow re-selection if clicking on input
+                searchInput.addEventListener('focus', function () {
+                    if (this.value) resultsDiv.style.display = 'block';
+                });
+            });
+        </script>
+</body>
+
+</html>

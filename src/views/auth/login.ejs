@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <%- include('../partials/common/head') %>
+        <link rel="stylesheet" href="/css/login-styles.css">
+        <style>
+            body {
+                background-color: #f8f9fa;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 100vh;
+            }
+
+            .login-container {
+                width: 100%;
+                max-width: 400px;
+                padding: 15px;
+                margin: auto;
+            }
+
+            .login-form {
+                background: white;
+                padding: 2rem;
+                border-radius: 10px;
+                box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            }
+        </style>
+</head>
+
+<body>
+    <div class="login-container">
+        <div class="login-form">
+            <div class="text-center mb-4">
+                <h1 class="h3 mt-3 mb-3 fw-normal text-primary">Đăng nhập PetCareX</h1>
+            </div>
+            <% if (error) { %>
+                <div class="alert alert-danger">
+                    <%= error %>
+                </div>
+                <% } %>
+                    <form method="POST" action="/login">
+                        <div class="form-floating mb-3">
+                            <input type="email" class="form-control" id="email" name="email"
+                                placeholder="name@example.com" value="<%= email || '' %>" required autofocus>
+                            <label for="email">Email</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="password" class="form-control" id="password" name="password"
+                                placeholder="Mật khẩu" required>
+                            <label for="password">Mật khẩu</label>
+                        </div>
+                        <button class="w-100 btn btn-lg btn-primary" type="submit">Đăng nhập</button>
+                    </form>
+
+                    <div class="mt-4 pt-3 border-top">
+                        <small class="text-muted d-block mb-2 text-center">Demo Accounts:</small>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-borderless small mb-0">
+                                <tbody>
+                                    <tr>
+                                        <td><span class="badge bg-secondary">RECEP</span></td>
+                                        <td class="text-nowrap">emp1@petcarex.com</td>
+                                        <td class="text-muted">emp_pwd_0000000001</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="badge bg-info text-dark">SALES</span></td>
+                                        <td class="text-nowrap">emp5@petcarex.com</td>
+                                        <td class="text-muted">emp_pwd_0000000005</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="badge bg-success">VET</span></td>
+                                        <td class="text-nowrap">emp7@petcarex.com</td>
+                                        <td class="text-muted">emp_pwd_0000000007</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="badge bg-warning text-dark">MGR</span></td>
+                                        <td class="text-nowrap">emp11@petcarex.com</td>
+                                        <td class="text-muted">emp_pwd_0000000011</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="badge bg-danger">DIR</span></td>
+                                        <td class="text-nowrap">director@petcarex.com</td>
+                                        <td class="text-muted">director_pwd_001</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+        </div>
+    </div>
+    <%- include('../partials/common/scripts') %>
+</body>
+
+</html>

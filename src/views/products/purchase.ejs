@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head><%- include('../partials/common/head') %>
+        <link rel="stylesheet" href="/css/management-styles.css">
+</head>
+
+<body>
+    <div class="app-wrapper">
+        <%- include('../partials/management/navbar') %>
+            <div class="d-flex flex-grow-1">
+                <%- include('../partials/management/sidebar') %>
+                    <main class="flex-grow-1 p-4">
+                        <h1 class="h3 mb-4">
+                            <%= title %>
+                        </h1>
+                        <% if (error) { %>
+                            <div class="alert alert-danger">
+                                <%= error %>
+                            </div>
+                            <% } %>
+                                <div class="row g-4">
+                                    <div class="col-md-6">
+                                        <div class="card">
+                                            <div class="card-header bg-primary text-white">Thông tin sản phẩm</div>
+                                            <div class="card-body">
+                                                <h5>
+                                                    <%= product.name %>
+                                                </h5>
+                                                <p class="fs-3 fw-bold text-success">
+                                                    <%= (product.price || 0).toLocaleString('vi-VN') %>đ
+                                                </p>
+                                                <p>Tồn kho: <%= product.stocks ? product.stocks.reduce((a,b)=> a +
+                                                        b.quantity, 0) : 'N/A' %></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card">
+                                            <div class="card-header">Thông tin mua hàng</div>
+                                            <div class="card-body">
+                                                <form method="POST" action="/products/<%= product.id %>/purchase">
+                                                    <!-- Customer Autocomplete -->
+                                                    <div class="mb-3 position-relative">
+                                                        <label class="form-label">Khách hàng <span
+                                                                class="text-danger">*</span></label>
+                                                        <input type="text" class="form-control" id="customerSearch"
+                                                            placeholder="Nhập tên hoặc SĐT..." autocomplete="off">
+                                                        <input type="hidden" name="customerId" id="customerId"
+                                                            value="<%= customerId %>" required>
+                                                        <div id="customerResults"
+                                                            class="list-group position-absolute w-100 shadow mt-1"
+                                                            style="z-index: 1000; display: none; max-height: 200px; overflow-y: auto;">
+                                                        </div>
+                                                        <div id="selectedCustomerInfo" class="form-text text-success"
+                                                            style="display: none;"><i
+                                                                class="bi bi-check-circle me-1"></i>Đã chọn: <span
+                                                                id="customerNameDisplay"></span></div>
+                                                    </div>
+
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Số lượng <span
+                                                                class="text-danger">*</span></label>
+                                                        <input type="number" class="form-control" name="quantity"
+                                                            min="1" value="1" required>
+                                                    </div>
+                                                    <div class="d-flex gap-2">
+                                                        <button type="submit" class="btn btn-success flex-grow-1">
+                                                            <i class="bi bi-cart-check me-2"></i>Xác nhận mua
+                                                        </button>
+                                                        <a href="/products/<%= product.id %>"
+                                                            class="btn btn-outline-secondary">Hủy</a>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                    </main>
+            </div>
+    </div>
+    <%- include('../partials/common/scripts') %>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const searchInput = document.getElementById('customerSearch');
+                const resultsDiv = document.getElementById('customerResults');
+                const hiddenInput = document.getElementById('customerId');
+                const selectedInfo = document.getElementById('selectedCustomerInfo');
+                const nameDisplay = document.getElementById('customerNameDisplay');
+                let debounceTimer;
+
+                searchInput.addEventListener('input', function () {
+                    const query = this.value;
+                    if (query.length < 2) {
+                        resultsDiv.style.display = 'none';
+                        return;
+                    }
+
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(() => {
+                        fetch(`/api/customers?q=${encodeURIComponent(query)}`)
+                            .then(res => res.json())
+                            .then(data => {
+                                resultsDiv.innerHTML = '';
+                                if (data.length === 0) {
+                                    const item = document.createElement('div');
+                                    item.className = 'list-group-item text-muted';
+                                    item.textContent = 'Không tìm thấy khách hàng';
+                                    resultsDiv.appendChild(item);
+                                } else {
+                                    data.forEach(c => {
+                                        const item = document.createElement('a');
+                                        item.className = 'list-group-item list-group-item-action';
+                                        item.href = '#';
+                                        item.innerHTML = `<div><strong>${c.name}</strong></div><small class="text-muted">${c.phone || c.email}</small>`;
+                                        item.addEventListener('click', (e) => {
+                                            e.preventDefault();
+                                            searchInput.value = c.name;
+                                            hiddenInput.value = c.id;
+                                            nameDisplay.textContent = `${c.name} (${c.phone || c.email})`;
+                                            selectedInfo.style.display = 'block';
+                                            resultsDiv.style.display = 'none';
+                                        });
+                                        resultsDiv.appendChild(item);
+                                    });
+                                }
+                                resultsDiv.style.display = 'block';
+                            });
+                    }, 300);
+                });
+
+                // Hide results when clicking outside
+                document.addEventListener('click', function (e) {
+                    if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
+                        resultsDiv.style.display = 'none';
+                    }
+                });
+
+                // Allow re-selection if clicking on input
+                searchInput.addEventListener('focus', function () {
+                    if (this.value.length >= 2) resultsDiv.style.display = 'block';
+                });
+            });
+        </script>
+</body>
+
+</html>

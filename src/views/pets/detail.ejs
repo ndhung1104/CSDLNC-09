@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head><%- include('../partials/common/head') %>
+        <link rel="stylesheet" href="/css/management-styles.css">
+</head>
+
+<body>
+    <div class="app-wrapper">
+        <%- include('../partials/management/navbar') %>
+            <div class="d-flex flex-grow-1">
+                <%- include('../partials/management/sidebar') %>
+                    <main class="flex-grow-1 p-4">
+                        <h1 class="h3 mb-4">
+                            <%= pet.PET_NAME %>
+                        </h1>
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">Thông tin thú cưng</div>
+                                    <div class="card-body">
+                                        <p><strong>ID:</strong>
+                                            <%= pet.PET_ID %>
+                                        </p>
+                                        <p><strong>Giống:</strong>
+                                            <%= pet.breedName %>
+                                        </p>
+                                        <p><strong>Loại:</strong>
+                                            <%= pet.typeOfPet %>
+                                        </p>
+                                        <p><strong>Giới tính:</strong>
+                                            <%= pet.PET_GENDER %>
+                                        </p>
+                                        <p><strong>Cân nặng:</strong>
+                                            <%= pet.PET_WEIGHT || '-' %> kg
+                                        </p>
+                                        <p><strong>Chủ:</strong> <a href="/customers/<%= pet.CUSTOMER_ID %>">
+                                                <%= pet.ownerName %>
+                                            </a></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">Thao tác</div>
+                                    <div class="card-body">
+                                        <% if (['RECEP', 'VET' , 'MGR' , 'DIRECTOR' ].includes(employee.position)) { %>
+                                            <a href="/checkups/create?petId=<%= pet.PET_ID %>"
+                                                class="btn btn-primary w-100 mb-2">
+                                                <i class="bi bi-clipboard2-pulse me-2"></i>Tạo phiếu khám
+                                            </a>
+                                            <% } %>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+            </div>
+    </div>
+    <%- include('../partials/common/scripts') %>
+</body>
+
+</html>

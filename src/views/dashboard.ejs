@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <%- include('./partials/common/head') %>
+        <link rel="stylesheet" href="/css/management-styles.css">
+</head>
+
+<body>
+    <div class="app-wrapper">
+        <%- include('./partials/management/navbar') %>
+            <div class="d-flex flex-grow-1">
+                <%- include('./partials/management/sidebar') %>
+                    <main class="flex-grow-1 p-4">
+                        <h1 class="h3 mb-4">Xin chào, <%= employee.name %>
+                        </h1>
+                        <p class="text-muted">
+                            <%= employee.position %> - <%= employee.branchName %>
+                        </p>
+                        <div class="row g-4 mt-3">
+                            <div class="col-md-4">
+                                <div class="card bg-primary text-white">
+                                    <div class="card-body">
+                                        <h3>
+                                            <%= stats.totalCustomers || 0 %>
+                                        </h3>
+                                        <small>Khách hàng</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-success text-white">
+                                    <div class="card-body">
+                                        <h3>
+                                            <%= stats.totalPets || 0 %>
+                                        </h3>
+                                        <small>Thú cưng</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+            </div>
+    </div>
+    <%- include('./partials/common/scripts') %>
+</body>
+
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head><%- include('../partials/common/head') %>
+        <link rel="stylesheet" href="/css/management-styles.css">
+</head>
+
+<body>
+    <div class="app-wrapper">
+        <%- include('../partials/management/navbar') %>
+            <div class="d-flex flex-grow-1">
+                <%- include('../partials/management/sidebar') %>
+                    <main class="flex-grow-1 p-4">
+                        <h1 class="h3 mb-4">
+                            <%= title %>
+                        </h1>
+
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <form method="POST" class="row g-3 align-items-end">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Ngày báo cáo</label>
+                                        <input type="date" class="form-control" name="date" value="<%= selectedDate %>"
+                                            required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Chi nhánh</label>
+                                        <select class="form-select" name="branchId">
+                                            <% branches.forEach(b=> { %>
+                                                <option value="<%= b.id %>" <%=b.id===employee.branchId ? 'selected'
+                                                    : '' %>><%= b.name %>
+                                                </option>
+                                                <% }) %>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button type="submit" class="btn btn-primary w-100">Xem báo cáo</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <% if (error) { %>
+                            <div class="alert alert-danger">
+                                <%= error %>
+                            </div>
+                            <% } %>
+
+                                <% if (report) { %>
+                                    <% const revenue=report.revenue || {}; %>
+                                        <% const empStats=Array.isArray(report.employeeStats) ? report.employeeStats :
+                                            []; %>
+                                            <% const custStats=report.customerStats || {}; %>
+                                                <div class="row g-4 mb-4">
+                                                    <div class="col-md-4">
+                                                        <div class="card bg-primary text-white">
+                                                            <div class="card-body text-center">
+                                                                <h2 class="mb-0">
+                                                                    <%= (revenue.TotalRevenue ||
+                                                                        0).toLocaleString('vi-VN') %>đ
+                                                                </h2>
+                                                                <small>Tổng doanh thu</small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="card bg-success text-white">
+                                                            <div class="card-body text-center">
+                                                                <h2 class="mb-0">
+                                                                    <%= revenue.ReceiptCount || 0 %>
+                                                                </h2>
+                                                                <small>Số hóa đơn</small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="card bg-info text-white">
+                                                            <div class="card-body text-center">
+                                                                <h2 class="mb-0">
+                                                                    <%= (custStats.NewCustomers || 0) +
+                                                                        (custStats.ReturningCustomers || 0) %>
+                                                                </h2>
+                                                                <small>Khách hàng</small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="row g-4">
+                                                    <div class="col-md-6">
+                                                        <div class="card">
+                                                            <div class="card-header">Hiệu suất nhân viên</div>
+                                                            <div class="table-responsive">
+                                                                <table class="table mb-0">
+                                                                    <thead>
+                                                                        <tr>
+                                                                            <th>Nhân viên</th>
+                                                                            <th>Số đơn</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                        <% if (empStats.length===0) { %>
+                                                                            <tr>
+                                                                                <td colspan="2"
+                                                                                    class="text-muted text-center">Không
+                                                                                    có dữ liệu</td>
+                                                                            </tr>
+                                                                            <% } else { empStats.forEach(e=> { %>
+                                                                                <tr>
+                                                                                    <td>
+                                                                                        <%= e.EMPLOYEE_NAME %>
+                                                                                    </td>
+                                                                                    <td>
+                                                                                        <%= e.ReceiptCount || 0 %>
+                                                                                    </td>
+                                                                                </tr>
+                                                                                <% }) } %>
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="card">
+                                                            <div class="card-header">Thống kê khách hàng</div>
+                                                            <div class="card-body">
+                                                                <p><strong>Khách mới:</strong>
+                                                                    <%= custStats.NewCustomers || 0 %>
+                                                                </p>
+                                                                <p><strong>Khách quay lại:</strong>
+                                                                    <%= custStats.ReturningCustomers || 0 %>
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <% } else { %>
+                                                    <div class="alert alert-info">Chọn ngày và nhấn "Xem báo cáo" để xem
+                                                        kết quả.</div>
+                                                    <% } %>
+                    </main>
+            </div>
+    </div>
+    <%- include('../partials/common/scripts') %>
+</body>
+
+</html>

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <%- include('../partials/common/head') %>
+        <link rel="stylesheet" href="/css/management-styles.css">
+</head>
+
+<body>
+    <div class="app-wrapper">
+        <%- include('../partials/management/navbar') %>
+            <div class="d-flex flex-grow-1">
+                <%- include('../partials/management/sidebar') %>
+                    <main class="flex-grow-1 p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h1 class="h3 mb-0">
+                                <%= title %>
+                            </h1>
+                            <div class="d-flex gap-2">
+                                <form class="d-flex gap-2" method="GET" action="/customers">
+                                    <select class="form-select" name="rankId" style="max-width: 150px;">
+                                        <option value="">Tất cả hạng</option>
+                                        <% if (typeof ranks !=='undefined' ) { %>
+                                            <% ranks.forEach(r=> { %>
+                                                <option value="<%= r.id %>" <%=typeof rankId !=='undefined' &&
+                                                    rankId==r.id ? 'selected' : '' %>><%= r.name %>
+                                                </option>
+                                                <% }) %>
+                                                    <% } %>
+                                    </select>
+                                    <input class="form-control me-2" type="search" name="search"
+                                        placeholder="Tìm kiếm..." aria-label="Search"
+                                        value="<%= typeof search !== 'undefined' ? search : '' %>">
+                                    <button class="btn btn-outline-secondary" type="submit"><i
+                                            class="bi bi-search"></i></button>
+                                </form>
+                                <a href="/customers/create" class="btn btn-primary text-nowrap"><i
+                                        class="bi bi-plus-lg me-2"></i>Thêm khách hàng</a>
+                            </div>
+                        </div>
+
+                        <% if (error) { %>
+                            <div class="alert alert-danger">
+                                <%= error %>
+                            </div>
+                            <% } %>
+
+                                <div class="card shadow-sm">
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover mb-0 align-middle">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th class="ps-3">ID</th>
+                                                        <th>Khách hàng</th>
+                                                        <th>Liên hệ</th>
+                                                        <th>Địa chỉ</th>
+                                                        <th>Hạng</th>
+                                                        <th class="text-end pe-3">Thao tác</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <% if (customers.length===0) { %>
+                                                        <tr>
+                                                            <td colspan="6" class="text-center py-4 text-muted">Không có
+                                                                dữ liệu</td>
+                                                        </tr>
+                                                        <% } else { %>
+                                                            <% customers.forEach(c=> { %>
+                                                                <tr>
+                                                                    <td class="ps-3">#<%= c.id %>
+                                                                    </td>
+                                                                    <td>
+                                                                        <div class="fw-bold">
+                                                                            <%= c.name %>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td>
+                                                                        <div><i
+                                                                                class="bi bi-telephone me-1 text-muted"></i>
+                                                                            <%= c.phone %>
+                                                                        </div>
+                                                                        <% if (c.email) { %><small class="text-muted"><i
+                                                                                    class="bi bi-envelope me-1"></i>
+                                                                                <%= c.email %>
+                                                                            </small>
+                                                                            <% } %>
+                                                                    </td>
+                                                                    <td>
+                                                                        <%= c.address %>
+                                                                    </td>
+                                                                    <td><span class="badge bg-secondary">
+                                                                            <%= c.rank || 'N/A' %>
+                                                                        </span></td>
+                                                                    <td class="text-end pe-3">
+                                                                        <a href="/customers/<%= c.id %>"
+                                                                            class="btn btn-sm btn-outline-primary"><i
+                                                                                class="bi bi-eye"></i></a>
+                                                                    </td>
+                                                                </tr>
+                                                                <% }) %>
+                                                                    <% } %>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <!-- Pagination -->
+                                    <% if (totalPages> 1) { %>
+                                        <div class="card-footer d-flex justify-content-center pt-3">
+                                            <nav>
+                                                <ul class="pagination">
+                                                    <li class="page-item <%= page <= 1 ? 'disabled' : '' %>">
+                                                        <a class="page-link"
+                                                            href="?page=<%= page - 1 %>&rankId=<%= typeof rankId !== 'undefined' ? rankId : '' %>&search=<%= search || '' %>">Trước</a>
+                                                    </li>
+                                                    <% let start=Math.max(1, page - 1); let end=Math.min(totalPages,
+                                                        page + 1); if (start> 1) { %>
+                                                        <li class="page-item">
+                                                            <a class="page-link"
+                                                                href="?page=1&rankId=<%= typeof rankId !== 'undefined' ? rankId : '' %>&search=<%= search || '' %>">1</a>
+                                                        </li>
+                                                        <% if (start> 2) { %>
+                                                            <li class="page-item disabled"><span
+                                                                    class="page-link">...</span></li>
+                                                            <% } %>
+                                                                <% } %>
+
+                                                                    <% for(let i=start; i <=end; i++) { %>
+                                                                        <li
+                                                                            class="page-item <%= page === i ? 'active' : '' %>">
+                                                                            <a class="page-link"
+                                                                                href="?page=<%= i %>&rankId=<%= typeof rankId !== 'undefined' ? rankId : '' %>&search=<%= search || '' %>">
+                                                                                <%= i %>
+                                                                            </a>
+                                                                        </li>
+                                                                        <% } %>
+
+                                                                            <% if (end < totalPages) { %>
+                                                                                <% if (end < totalPages - 1) { %>
+                                                                                    <li class="page-item disabled"><span
+                                                                                            class="page-link">...</span>
+                                                                                    </li>
+                                                                                    <% } %>
+                                                                                        <li class="page-item">
+                                                                                            <a class="page-link"
+                                                                                                href="?page=<%= totalPages %>&rankId=<%= typeof rankId !== 'undefined' ? rankId : '' %>&search=<%= search || '' %>">
+                                                                                                <%= totalPages %>
+                                                                                            </a>
+                                                                                        </li>
+                                                                                        <% } %>
+                                                                                            <li
+                                                                                                class="page-item <%= page >= totalPages ? 'disabled' : '' %>">
+                                                                                                <a class="page-link"
+                                                                                                    href="?page=<%= page + 1 %>&rankId=<%= typeof rankId !== 'undefined' ? rankId : '' %>&search=<%= search || '' %>">Sau</a>
+                                                                                            </li>
+                                                </ul>
+                                            </nav>
+                                        </div>
+                                        <% } %>
+                                </div>
+                    </main>
+            </div>
+    </div>
+    <%- include('../partials/common/scripts') %>
+</body>
+
+</html>

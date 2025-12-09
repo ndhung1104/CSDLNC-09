@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head><%- include('../partials/common/head') %>
+        <link rel="stylesheet" href="/css/management-styles.css">
+</head>
+
+<body>
+    <div class="app-wrapper">
+        <%- include('../partials/management/navbar') %>
+            <div class="d-flex flex-grow-1">
+                <%- include('../partials/management/sidebar') %>
+                    <main class="flex-grow-1 p-4">
+                        <h1 class="h3 mb-4">
+                            <%= plan.name %>
+                        </h1>
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">Thông tin gói</div>
+                                    <div class="card-body">
+                                        <p><strong>Thời gian:</strong>
+                                            <%= plan.duration %> ngày
+                                        </p>
+                                        <p><strong>Giá:</strong> <span class="fs-4 fw-bold text-primary">
+                                                <%= (plan.price || 0).toLocaleString('vi-VN') %>đ
+                                            </span></p>
+                                        <a href="/vaccination-plans/<%= plan.id %>/purchase"
+                                            class="btn btn-primary mt-3">Mua gói này</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">Danh sách vaccine (<%= plan.vaccines?.length || 0 %> mũi)
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>Vaccine</th>
+                                                    <th>Liều lượng</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <% if (!plan.vaccines || plan.vaccines.length===0) { %>
+                                                    <tr>
+                                                        <td colspan="2" class="text-muted text-center">Không có vaccine
+                                                        </td>
+                                                    </tr>
+                                                    <% } else { plan.vaccines.forEach(v=> { %>
+                                                        <tr>
+                                                            <td>
+                                                                <%= v.name %>
+                                                            </td>
+                                                            <td>
+                                                                <%= v.dosage %>
+                                                            </td>
+                                                        </tr>
+                                                        <% }) } %>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+            </div>
+    </div>
+    <%- include('../partials/common/scripts') %>
+</body>
+
+</html>

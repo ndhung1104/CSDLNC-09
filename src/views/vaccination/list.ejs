@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head><%- include('../partials/common/head') %>
+        <link rel="stylesheet" href="/css/management-styles.css">
+</head>
+
+<body>
+    <div class="app-wrapper">
+        <%- include('../partials/management/navbar') %>
+            <div class="d-flex flex-grow-1">
+                <%- include('../partials/management/sidebar') %>
+                    <main class="flex-grow-1 p-4">
+                        <h1 class="h3 mb-4">
+                            <%= title %>
+                        </h1>
+                        <% if (error) { %>
+                            <div class="alert alert-danger">
+                                <%= error %>
+                            </div>
+                            <% } %>
+                                <div class="row g-4">
+                                    <% if (plans.length===0) { %>
+                                        <div class="col-12">
+                                            <p class="text-muted">Chưa có gói tiêm phòng</p>
+                                        </div>
+                                        <% } %>
+                                            <% plans.forEach(p=> { %>
+                                                <div class="col-md-4">
+                                                    <div class="card h-100">
+                                                        <div class="card-body">
+                                                            <h5 class="card-title">
+                                                                <%= p.name %>
+                                                            </h5>
+                                                            <p class="text-muted small">Thời gian: <%= p.duration %>
+                                                                    ngày</p>
+                                                            <p class="fs-4 fw-bold text-primary">
+                                                                <%= (p.price || 0).toLocaleString('vi-VN') %>đ
+                                                            </p>
+                                                        </div>
+                                                        <div class="card-footer">
+                                                            <a href="/vaccination-plans/<%= p.id %>"
+                                                                class="btn btn-outline-primary btn-sm me-2">Chi tiết</a>
+                                                            <a href="/vaccination-plans/<%= p.id %>/purchase"
+                                                                class="btn btn-primary btn-sm">Mua ngay</a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <% }) %>
+                                </div>
+                                <!-- Pagination -->
+                                <% if (totalPages> 1) { %>
+                                    <nav class="mt-4">
+                                        <ul class="pagination justify-content-center">
+                                            <li class="page-item <%= page <= 1 ? 'disabled' : '' %>">
+                                                <a class="page-link" href="?page=<%= page - 1 %>">Trước</a>
+                                            </li>
+                                            <% for (let i=1; i <=totalPages; i++) { %>
+                                                <li class="page-item <%= i === page ? 'active' : '' %>">
+                                                    <a class="page-link" href="?page=<%= i %>">
+                                                        <%= i %>
+                                                    </a>
+                                                </li>
+                                                <% } %>
+                                                    <li class="page-item <%= page >= totalPages ? 'disabled' : '' %>">
+                                                        <a class="page-link" href="?page=<%= page + 1 %>">Tiếp</a>
+                                                    </li>
+                                        </ul>
+                                    </nav>
+                                    <% } %>
+                    </main>
+            </div>
+    </div>
+    <%- include('../partials/common/scripts') %>
+</body>
+
+</html>

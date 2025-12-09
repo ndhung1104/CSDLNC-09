@@ -20,11 +20,23 @@ REVIEW_RATIO = 0.35  # 35% hoá đơn có review
 # ==============================
 # KẾT NỐI SQL SERVER
 # ==============================
+
+# Local SQL Server (uncomment to use)
+# conn_str = (
+#     "DRIVER={ODBC Driver 17 for SQL Server};"
+#     "SERVER=LAPTOP-1OTLC941\\SQLEXPRESS;"
+#     "DATABASE=PETCAREX;"
+#     "Trusted_Connection=yes;"
+# )
+
+# Docker Container SQL Server
 conn_str = (
     "DRIVER={ODBC Driver 17 for SQL Server};"
-    "SERVER=LAPTOP-1OTLC941\SQLEXPRESS;"
+    "SERVER=localhost,1433;"
     "DATABASE=PETCAREX;"
-    "Trusted_Connection=yes;"
+    "UID=sa;"
+    "PWD=PetCareX@2024;"
+    "TrustServerCertificate=yes;"
 )
 
 conn = pyodbc.connect(conn_str)

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head><%- include('../partials/common/head') %>
+        <link rel="stylesheet" href="/css/management-styles.css">
+</head>
+
+<body>
+    <div class="app-wrapper">
+        <%- include('../partials/management/navbar') %>
+            <div class="d-flex flex-grow-1">
+                <%- include('../partials/management/sidebar') %>
+                    <main class="flex-grow-1 p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h1 class="h3 mb-0">
+                                <%= title %>
+                            </h1>
+                        </div>
+
+                        <form class="mb-4" method="GET">
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="search"
+                                    placeholder="Tìm theo tên thú cưng hoặc chủ..." value="<%= search || '' %>">
+                                <button class="btn btn-outline-secondary" type="submit"><i
+                                        class="bi bi-search"></i></button>
+                            </div>
+                        </form>
+
+                        <div class="card">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Tên</th>
+                                            <th>Giống</th>
+                                            <th>Loại</th>
+                                            <th>Giới tính</th>
+                                            <th>Chủ</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <% if (pets.length===0) { %>
+                                            <tr>
+                                                <td colspan="7" class="text-center text-muted py-4">Chưa có thú cưng
+                                                </td>
+                                            </tr>
+                                            <% } %>
+                                                <% pets.forEach(p=> { %>
+                                                    <tr>
+                                                        <td>
+                                                            <%= p.id %>
+                                                        </td>
+                                                        <td><strong>
+                                                                <%= p.name %>
+                                                            </strong></td>
+                                                        <td>
+                                                            <%= p.breedName %>
+                                                        </td>
+                                                        <td>
+                                                            <%= p.typeOfPet %>
+                                                        </td>
+                                                        <td>
+                                                            <%= p.gender %>
+                                                        </td>
+                                                        <td><a href="/customers/<%= p.customerId %>">
+                                                                <%= p.ownerName %>
+                                                            </a></td>
+                                                        <td><a href="/pets/<%= p.id %>"
+                                                                class="btn btn-sm btn-outline-primary">Chi tiết</a></td>
+                                                    </tr>
+                                                    <% }) %>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </main>
+            </div>
+    </div>
+    <%- include('../partials/common/scripts') %>
+</body>
+
+</html>

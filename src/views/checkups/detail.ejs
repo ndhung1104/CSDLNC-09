@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head><%- include('../partials/common/head') %>
+        <link rel="stylesheet" href="/css/management-styles.css">
+</head>
+
+<body>
+    <div class="app-wrapper">
+        <%- include('../partials/management/navbar') %>
+            <div class="d-flex flex-grow-1">
+                <%- include('../partials/management/sidebar') %>
+                    <main class="flex-grow-1 p-4">
+                        <h1 class="h3 mb-4">
+                            <%= title %>
+                        </h1>
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">Thông tin phiếu khám</div>
+                                    <div class="card-body">
+                                        <p><strong>Ngày khám:</strong>
+                                            <%= new Date(checkup.CHECK_UP_DATE).toLocaleDateString('vi-VN') %>
+                                        </p>
+                                        <p><strong>Chi nhánh:</strong>
+                                            <%= checkup.branchName %>
+                                        </p>
+                                        <p><strong>Bác sĩ:</strong>
+                                            <%= checkup.vetName %>
+                                        </p>
+                                        <p><strong>Thú cưng:</strong> <a href="/pets/<%= checkup.PET_ID %>">
+                                                <%= checkup.petName %>
+                                            </a></p>
+                                        <p><strong>Khách hàng:</strong> <a href="/customers/<%= checkup.CUSTOMER_ID %>">
+                                                <%= checkup.customerName %>
+                                            </a></p>
+                                        <p><strong>Trạng thái:</strong> <span
+                                                class="badge bg-<%= checkup.STATUS === 'Hoàn thành' ? 'success' : 'warning' %>">
+                                                <%= checkup.STATUS %>
+                                            </span></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">Ghi chú & Cập nhật</div>
+                                    <div class="card-body">
+                                        <form method="POST" action="/checkups/<%= checkup.CHECK_UP_ID %>/update">
+                                            <div class="mb-3">
+                                                <label class="form-label">Ghi chú / Chẩn đoán</label>
+                                                <textarea class="form-control" name="note"
+                                                    rows="4"><%= checkup.CHECK_UP_NOTE || '' %></textarea>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Trạng thái</label>
+                                                <select class="form-select" name="status">
+                                                    <option value="Chờ" <%=checkup.STATUS==='Chờ' ? 'selected' : '' %>
+                                                        >Chờ</option>
+                                                    <option value="Đang khám" <%=checkup.STATUS==='Đang khám'
+                                                        ? 'selected' : '' %>>Đang khám</option>
+                                                    <option value="Hoàn thành" <%=checkup.STATUS==='Hoàn thành'
+                                                        ? 'selected' : '' %>>Hoàn thành</option>
+                                                </select>
+                                            </div>
+                                            <button type="submit" class="btn btn-primary">Cập nhật</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+            </div>
+    </div>
+    <%- include('../partials/common/scripts') %>
+</body>
+
+</html>
