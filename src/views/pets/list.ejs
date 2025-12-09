@@ -19,8 +19,14 @@
 
                         <form class="mb-4" method="GET">
                             <div class="input-group">
+                                <select class="form-select" name="searchBy" style="max-width: 160px;">
+                                    <option value="pet" <%=(typeof searchBy==='undefined' || searchBy==='pet' )
+                                        ? 'selected' : '' %>>Tên thú cưng</option>
+                                    <option value="owner" <%=(typeof searchBy !=='undefined' && searchBy==='owner' )
+                                        ? 'selected' : '' %>>Tên chủ</option>
+                                </select>
                                 <input type="text" class="form-control" name="search"
-                                    placeholder="Tìm theo tên thú cưng hoặc chủ..." value="<%= search || '' %>">
+                                    placeholder="Nhập từ khóa tìm kiếm..." value="<%= search || '' %>">
                                 <button class="btn btn-outline-secondary" type="submit"><i
                                         class="bi bi-search"></i></button>
                             </div>

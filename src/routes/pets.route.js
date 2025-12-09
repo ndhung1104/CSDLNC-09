@@ -6,17 +6,17 @@ const router = Router();
 
 // List pets
 router.get('/', requireRole('RECEP', 'VET', 'MGR', 'DIRECTOR', 'SALES'), async (req, res) => {
-    const { search = '', page = 1 } = req.query;
+    const { search = '', searchBy = 'pet', page = 1 } = req.query;
     try {
-        const { pets, total, limit } = await petModel.getAll({ search, page: parseInt(page) });
+        const { pets, total, limit } = await petModel.getAll({ search, searchBy, page: parseInt(page) });
         const totalPages = Math.ceil(total / limit);
         res.render('pets/list', {
-            title: 'Thú cưng', pets, search, page: parseInt(page), totalPages, total, error: null,
+            title: 'Thú cưng', pets, search, searchBy, page: parseInt(page), totalPages, total, error: null,
             employee: req.session.employee
         });
     } catch (err) {
         console.error(err);
-        res.render('pets/list', { title: 'Thú cưng', pets: [], search: '', page: 1, totalPages: 0, total: 0, error: err.message, employee: req.session.employee });
+        res.render('pets/list', { title: 'Thú cưng', pets: [], search: '', searchBy: 'pet', page: 1, totalPages: 0, total: 0, error: err.message, employee: req.session.employee });
     }
 });
 

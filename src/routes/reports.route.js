@@ -38,28 +38,50 @@ router.get('/daily', requireRole('MGR', 'DIRECTOR'), async (req, res) => {
 router.post('/daily', requireRole('MGR', 'DIRECTOR'), async (req, res) => {
     const { date, branchId } = req.body;
     const emp = req.session.employee;
+
+    console.log('=== ROUTE DEBUG ===');
+    console.log('req.body:', req.body);
+    console.log('branchId from body:', branchId);
+    console.log('emp.branchId:', emp.branchId);
+
     const branches = await reportModel.getBranches();
+    console.log('branches:', branches);
+    console.log('branches is array:', Array.isArray(branches));
+
+    const selectedBranchId = parseInt(branchId) || emp.branchId;
+    console.log('selectedBranchId:', selectedBranchId);
 
     try {
         const report = await reportModel.getBranchDailyReport({
-            branchId: branchId || emp.branchId,
+            branchId: selectedBranchId,
             reportDate: date
         });
+
+        console.log('report:', JSON.stringify(report).substring(0, 500));
+        console.log('=== END ROUTE DEBUG ===');
+
+        // Also fetch available dates with data for this branch
+        const availableDates = await reportModel.getAvailableDates({ branchId: selectedBranchId });
+
         res.render('reports/daily', {
             title: 'Báo cáo cuối ngày',
             report,
             branches,
+            availableDates,
             selectedDate: date,
+            selectedBranchId,
             error: null,
             employee: emp
         });
     } catch (err) {
-        console.error(err);
+        console.error('POST /daily error:', err);
         res.render('reports/daily', {
             title: 'Báo cáo cuối ngày',
             report: null,
             branches,
+            availableDates: [],
             selectedDate: date,
+            selectedBranchId,
             error: err.message,
             employee: emp
         });

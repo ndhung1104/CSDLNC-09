@@ -1,55 +1,61 @@
 import db from '../utils/db.js';
 
-// Get all receipts
+// Get all receipts (using raw SQL with TOP for reliability)
 export async function getAll({ branchId = null, status = null, page = 1, limit = 20 } = {}) {
-    const offset = (page - 1) * limit;
-    let query = db('RECEIPT')
-        .leftJoin('CUSTOMER', 'RECEIPT.CUSTOMER_ID', 'CUSTOMER.CUSTOMER_ID')
-        .join('BRANCH', 'RECEIPT.BRANCH_ID', 'BRANCH.BRANCH_ID')
-        .leftJoin('EMPLOYEE', 'RECEIPT.RECEPTIONIST_ID', 'EMPLOYEE.EMPLOYEE_ID')
-        .select(
-            'RECEIPT.RECEIPT_ID as id',
-            'RECEIPT.RECEIPT_STATUS as status',
-            'RECEIPT.RECEIPT_TOTAL_PRICE as total',
-            'RECEIPT.RECEIPT_CREATED_DATE as date',
-            'CUSTOMER.CUSTOMER_NAME as customerName',
-            'CUSTOMER.CUSTOMER_ID as customerId',
-            'BRANCH.BRANCH_NAME as branchName',
-            'EMPLOYEE.EMPLOYEE_NAME as employeeName'
-        )
-        .orderBy('RECEIPT.RECEIPT_CREATED_DATE', 'desc');
+    // Count query
+    const countResult = await db.raw('SELECT COUNT(*) as count FROM RECEIPT');
+    const total = countResult[0]?.count || 0;
 
-    if (branchId) query = query.where('RECEIPT.BRANCH_ID', branchId);
-    if (status) query = query.where('RECEIPT.RECEIPT_STATUS', status);
+    // Data query using raw SQL with TOP
+    const receipts = await db.raw(`
+        SELECT TOP (${limit})
+            r.RECEIPT_ID as id,
+            r.RECEIPT_STATUS as status,
+            r.RECEIPT_TOTAL_PRICE as total,
+            r.RECEIPT_CREATED_DATE as date,
+            c.CUSTOMER_NAME as customerName,
+            c.CUSTOMER_ID as customerId,
+            b.BRANCH_NAME as branchName,
+            e.EMPLOYEE_NAME as employeeName
+        FROM RECEIPT r
+        LEFT JOIN CUSTOMER c ON r.CUSTOMER_ID = c.CUSTOMER_ID
+        LEFT JOIN BRANCH b ON r.BRANCH_ID = b.BRANCH_ID
+        LEFT JOIN EMPLOYEE e ON r.RECEPTIONIST_ID = e.EMPLOYEE_ID
+        ORDER BY r.RECEIPT_CREATED_DATE DESC
+    `);
 
-    const total = await query.clone().count('* as count').first();
-    const receipts = await query.offset(offset).limit(limit);
-    return { receipts, total: total?.count || 0, page, limit };
+    return { receipts, total, page, limit };
 }
 
 // Get receipt by ID with details
 export async function getById(id) {
-    const receipt = await db('RECEIPT')
-        .leftJoin('CUSTOMER', 'RECEIPT.CUSTOMER_ID', 'CUSTOMER.CUSTOMER_ID')
-        .join('BRANCH', 'RECEIPT.BRANCH_ID', 'BRANCH.BRANCH_ID')
-        .leftJoin('EMPLOYEE', 'RECEIPT.RECEPTIONIST_ID', 'EMPLOYEE.EMPLOYEE_ID')
-        .select('RECEIPT.*', 'CUSTOMER.CUSTOMER_NAME as customerName',
-            'BRANCH.BRANCH_NAME as branchName', 'EMPLOYEE.EMPLOYEE_NAME as employeeName')
-        .where('RECEIPT.RECEIPT_ID', id)
-        .first();
+    const result = await db.raw(`
+        SELECT 
+            r.*,
+            c.CUSTOMER_NAME as customerName,
+            b.BRANCH_NAME as branchName,
+            e.EMPLOYEE_NAME as employeeName
+        FROM RECEIPT r
+        LEFT JOIN CUSTOMER c ON r.CUSTOMER_ID = c.CUSTOMER_ID
+        LEFT JOIN BRANCH b ON r.BRANCH_ID = b.BRANCH_ID
+        LEFT JOIN EMPLOYEE e ON r.RECEPTIONIST_ID = e.EMPLOYEE_ID
+        WHERE r.RECEIPT_ID = ?
+    `, [id]);
 
+    const receipt = result[0];
     if (!receipt) return null;
 
-    const details = await db('RECEIPT_DETAIL')
-        .join('PRODUCT', 'RECEIPT_DETAIL.PRODUCT_ID', 'PRODUCT.PRODUCT_ID')
-        .select('RECEIPT_DETAIL.*', 'PRODUCT.PRODUCT_NAME as productName')
-        .where('RECEIPT_DETAIL.RECEIPT_ID', id);
+    const details = await db.raw(`
+        SELECT rd.*, p.PRODUCT_NAME as productName
+        FROM RECEIPT_DETAIL rd
+        JOIN PRODUCT p ON rd.PRODUCT_ID = p.PRODUCT_ID
+        WHERE rd.RECEIPT_ID = ?
+    `, [id]);
 
     return { ...receipt, details };
 }
 
 // Create draft receipt using stored procedure
-// SP: uspReceiptCreateDraft(@BranchId, @CustomerId, @ReceptionistId, @PaymentMethod, @ReceiptId OUTPUT)
 export async function createDraft({ customerId, branchId, employeeId, paymentMethod = 'Cash' }) {
     const result = await db.raw(`
     DECLARE @NewId INT;
@@ -71,5 +77,5 @@ export async function complete(receiptId) {
 
 // Get branches for dropdown
 export async function getBranches() {
-    return db('BRANCH').select('BRANCH_ID as id', 'BRANCH_NAME as name');
+    return db.raw('SELECT BRANCH_ID as id, BRANCH_NAME as name FROM BRANCH');
 }

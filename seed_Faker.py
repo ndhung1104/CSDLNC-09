@@ -2,7 +2,6 @@ import pyodbc
 from faker import Faker
 import random
 from datetime import datetime, timedelta
-from collections import defaultdict
 from pathlib import Path
 
 # pip install faker pyodbc
@@ -10,28 +9,21 @@ from pathlib import Path
 # ==============================
 # CẤU HÌNH
 # ==============================
-N_CUSTOMERS = 70000
+N_CUSTOMERS = 100000
 MAX_PETS_PER_CUSTOMER = 2
-N_CHECKUPS = 70000
-N_RECEIPTS = 70000
+N_CHECKUPS = 100000
+N_RECEIPTS = 100000
 MAX_ITEMS_PER_RECEIPT = 5
 REVIEW_RATIO = 0.35  # 35% hoá đơn có review
+BATCH_SIZE = 2000  # Smaller batch size to avoid memory issues
 
 # ==============================
 # KẾT NỐI SQL SERVER
 # ==============================
 
-# Local SQL Server (uncomment to use)
-# conn_str = (
-#     "DRIVER={ODBC Driver 17 for SQL Server};"
-#     "SERVER=LAPTOP-1OTLC941\\SQLEXPRESS;"
-#     "DATABASE=PETCAREX;"
-#     "Trusted_Connection=yes;"
-# )
-
 # Docker Container SQL Server
 conn_str = (
-    "DRIVER={ODBC Driver 17 for SQL Server};"
+    "DRIVER={ODBC Driver 18 for SQL Server};"
     "SERVER=localhost,1433;"
     "DATABASE=PETCAREX;"
     "UID=sa;"
@@ -41,6 +33,7 @@ conn_str = (
 
 conn = pyodbc.connect(conn_str)
 cursor = conn.cursor()
+cursor.fast_executemany = True  # Enable fast bulk inserts
 fake = Faker("vi_VN")
 
 # ==============================
@@ -51,9 +44,6 @@ def fetch_ids(query):
     return [row[0] for row in cursor.fetchall()]
 
 def random_date_between(start_date, end_date):
-    """
-    Random datetime giữa start_date và end_date (datetime hoặc date).
-    """
     if isinstance(start_date, datetime):
         start = start_date
     else:
@@ -70,13 +60,19 @@ def random_date_between(start_date, end_date):
     rand_seconds = random.randint(0, 86400 - 1)
     return start + timedelta(days=rand_days, seconds=rand_seconds)
 
+def bulk_insert(sql, data, table_name):
+    """Execute bulk insert with progress reporting (fast with Driver 18)"""
+    total = len(data)
+    for i in range(0, total, BATCH_SIZE):
+        batch = data[i:i+BATCH_SIZE]
+        cursor.executemany(sql, batch)
+        conn.commit()
+        print(f"  > {table_name}: {min(i+BATCH_SIZE, total):,}/{total:,} inserted...")
+
 # ==============================
 # SEED MASTER (seed_master.sql)
 # ==============================
 def execute_sql_batches(sql_text):
-    """
-    Split SQL text by GO batches and execute sequentially.
-    """
     batches = []
     current = []
     for line in sql_text.splitlines():
@@ -98,9 +94,6 @@ def execute_sql_batches(sql_text):
 
 
 def run_seed_master_file():
-    """
-    Execute seed_master.sql once to bootstrap master data.
-    """
     sql_path = Path(__file__).resolve().parent / "seed_master.sql"
     if not sql_path.exists():
         raise FileNotFoundError(f"seed_master.sql not found at {sql_path}")
@@ -112,9 +105,6 @@ def run_seed_master_file():
 
 
 def ensure_master_seeded():
-    """
-    Only run seed_master.sql when master tables are empty to avoid duplicates.
-    """
     cursor.execute("SELECT COUNT(*) FROM MEMBERSHIP_RANK")
     membership_count = cursor.fetchone()[0]
     cursor.execute("SELECT COUNT(*) FROM PET_BREED")
@@ -138,7 +128,7 @@ def ensure_master_seeded():
 # LẤY MASTER ID
 # ==============================
 ensure_master_seeded()
-print("Đang load master IDs...")
+print("Loading master IDs...")
 
 membership_ids = fetch_ids("SELECT MEMBERSHIP_RANK_ID FROM MEMBERSHIP_RANK")
 breed_ids = fetch_ids("SELECT BREED_ID FROM PET_BREED")
@@ -146,14 +136,13 @@ branch_ids = fetch_ids("SELECT BRANCH_ID FROM BRANCH")
 sales_product_ids = fetch_ids("SELECT SALES_PRODUCT_ID FROM SALES_PRODUCT")
 medical_service_ids = fetch_ids("SELECT MEDICAL_SERVICE_ID FROM MEDICAL_SERVICE")
 
-# Lấy employee theo vai trò
 cursor.execute("SELECT EMPLOYEE_ID, EMPLOYEE_POSITION FROM EMPLOYEE")
 rows = cursor.fetchall()
 receptionist_ids = [r[0] for r in rows if r[1].strip() in ("RECEP", "SALES")]
 vet_ids = [r[0] for r in rows if r[1].strip() == "VET"]
 
 if not membership_ids or not breed_ids or not branch_ids or not sales_product_ids or not medical_service_ids:
-    raise RuntimeError("Thiếu dữ liệu master. Hãy chạy seed_master.sql trước.")
+    raise RuntimeError("Missing master data. Run seed_master.sql first.")
 
 print("Master IDs loaded.")
 print(f"- MEMBERSHIP_RANK: {len(membership_ids)}")
@@ -165,63 +154,49 @@ print(f"- RECEPTIONIST/SALES: {len(receptionist_ids)}")
 print(f"- VET: {len(vet_ids)}")
 
 # ==============================
-# 1. INSERT CUSTOMER
+# 1. INSERT CUSTOMER (BULK)
 # ==============================
 def insert_customers(n=N_CUSTOMERS):
-    print(f"Đang sinh {n} khách hàng...")
-    batch_size = 1000
+    print(f"Generating {n:,} customers...")
     cursor.execute("SELECT COUNT(*) FROM CUSTOMER")
     existing = cursor.fetchone()[0]
     start_index = existing + 1
 
-    for i in range(0, n):
+    data = []
+    for i in range(n):
         seq = start_index + i
         name = fake.name()
-        phone = "0" + str(random.randint(100000000, 999999999))  # 10 số
+        phone = "0" + str(random.randint(100000000, 999999999))
         email = f"user{seq}@example.com"
         password = f"cust_pwd_{seq:010d}"
         gender = random.choice(["Nam", "Nữ"])
         birthdate = fake.date_between(start_date="-50y", end_date="-18y")
         rank_id = random.choice(membership_ids)
+        
+        data.append((rank_id, name, phone, email, password, gender, birthdate, 0))
 
-        cursor.execute(
-            """
-            INSERT INTO CUSTOMER (
-                MEMBERSHIP_RANK_ID,
-                CUSTOMER_NAME,
-                CUSTOMER_PHONE,
-                CUSTOMER_EMAIL,
-                EMPLOYEE_PASSWORD,
-                CUSTOMER_GENDER,
-                CUSTOMER_BIRTHDATE,
-                CUSTOMER_LOYALTY
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, 0)
-            """,
-            (rank_id, name, phone, email, password, gender, birthdate),
-        )
-
-        if (i + 1) % batch_size == 0:
-            conn.commit()
-            print(f"  > Đã insert {seq} khách hàng...")
-
-    conn.commit()
-    print("Hoàn thành sinh CUSTOMER.")
+    sql = """
+        INSERT INTO CUSTOMER (
+            MEMBERSHIP_RANK_ID, CUSTOMER_NAME, CUSTOMER_PHONE, CUSTOMER_EMAIL,
+            EMPLOYEE_PASSWORD, CUSTOMER_GENDER, CUSTOMER_BIRTHDATE, CUSTOMER_LOYALTY
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """
+    bulk_insert(sql, data, "CUSTOMER")
+    print(f"Completed: {n:,} customers inserted.")
 
 
 # ==============================
-# 2. INSERT PET
+# 2. INSERT PET (BULK)
 # ==============================
 def insert_pets():
-    print("Đang lấy CUSTOMER_ID để sinh PET...")
+    print("Generating pets for all customers...")
     customer_ids = fetch_ids("SELECT CUSTOMER_ID FROM CUSTOMER")
-    print(f"Tổng khách hàng: {len(customer_ids)}")
+    print(f"Total customers: {len(customer_ids):,}")
 
-    pet_names = ["Bông", "Đốm", "Miu", "Cún", "Na", "Xoài", "Lu", "Mực", "Bé", "Bon", "Susu"]
+    pet_names = ["Bông", "Đốm", "Miu", "Cún", "Na", "Xoài", "Lu", "Mực", "Bé", "Bon", "Susu", "Lucky", "Max", "Milo"]
+    health_statuses = ["Khỏe", "Béo phì nhẹ", "Viêm da nhẹ", "Dị ứng nhẹ", "Viêm tai nhẹ"]
 
-    batch_size = 1000
-    count = 0
-
-    print("Đang sinh thú cưng cho khách hàng...")
+    data = []
     for customer_id in customer_ids:
         num_pets = random.randint(1, MAX_PETS_PER_CUSTOMER)
         for _ in range(num_pets):
@@ -229,139 +204,109 @@ def insert_pets():
             breed_id = random.choice(breed_ids)
             gender = random.choice(["Nam", "Nữ"])
             birthdate = fake.date_between(start_date="-15y", end_date="today")
-            health_status = random.choice(
-                ["Khỏe", "Béo phì nhẹ", "Viêm da nhẹ", "Dị ứng nhẹ", "Viêm tai nhẹ"]
-            )
+            health_status = random.choice(health_statuses)
+            
+            data.append((customer_id, pet_name, breed_id, gender, birthdate, health_status))
 
-            cursor.execute(
-                """
-                INSERT INTO PET (
-                    CUSTOMER_ID,
-                    PET_NAME,
-                    PET_BREED_ID,
-                    PET_GENDER,
-                    PET_BIRTHDATE,
-                    PET_HEALTH_STATUS
-                ) VALUES (?, ?, ?, ?, ?, ?)
-                """,
-                (customer_id, pet_name, breed_id, gender, birthdate, health_status),
-            )
-            count += 1
-
-            if count % batch_size == 0:
-                conn.commit()
-                print(f"  > Đã insert {count} PET...")
-
-    conn.commit()
-    print(f"Hoàn thành sinh PET. Tổng PET: ~{count}")
+    sql = """
+        INSERT INTO PET (
+            CUSTOMER_ID, PET_NAME, PET_BREED_ID, PET_GENDER, PET_BIRTHDATE, PET_HEALTH_STATUS
+        ) VALUES (?, ?, ?, ?, ?, ?)
+    """
+    bulk_insert(sql, data, "PET")
+    print(f"Completed: {len(data):,} pets inserted.")
 
 
 # ==============================
-# 3. INSERT CHECK_UP
+# 3. INSERT CHECK_UP (BULK with small batches)
 # ==============================
 def insert_checkups(n=N_CHECKUPS):
-    print(f"Đang lấy PET_ID để sinh {n} CHECK_UP...")
+    print(f"Generating {n:,} checkups...")
     pet_ids = fetch_ids("SELECT PET_ID FROM PET")
     if not pet_ids:
-        raise RuntimeError("Không có PET nào để tạo CHECK_UP.")
-
+        raise RuntimeError("No PET found for CHECK_UP.")
     if not vet_ids:
-        raise RuntimeError("Không có VET nào trong EMPLOYEE để gán vào CHECK_UP.")
+        raise RuntimeError("No VET found in EMPLOYEE.")
 
-    batch_size = 1000
     start_date = datetime.now() - timedelta(days=365 * 3)
     end_date = datetime.now()
 
     symptoms_list = [
-        "Bỏ ăn, nôn nhẹ",
-        "Tiêu chảy 2 ngày",
-        "Ngứa nhiều, gãi liên tục",
-        "Ho khan, sổ mũi",
-        "Mắt đỏ, chảy ghèn",
-        "Lười vận động, mệt mỏi",
+        "Bỏ ăn, nôn nhẹ", "Tiêu chảy 2 ngày", "Ngứa nhiều, gãi liên tục",
+        "Ho khan, sổ mũi", "Mắt đỏ, chảy ghèn", "Lười vận động, mệt mỏi",
     ]
     diagnosis_list = [
-        "Viêm da dị ứng nhẹ",
-        "Rối loạn tiêu hóa",
-        "Nhiễm khuẩn đường hô hấp trên",
-        "Viêm tai ngoài",
-        "Viêm kết mạc",
-        "Thừa cân, cần giảm khẩu phần",
+        "Viêm da dị ứng nhẹ", "Rối loạn tiêu hóa", "Nhiễm khuẩn đường hô hấp trên",
+        "Viêm tai ngoài", "Viêm kết mạc", "Thừa cân, cần giảm khẩu phần",
     ]
 
-    print("Đang sinh CHECK_UP...")
-    for i in range(1, n + 1):
+    sql = """
+        INSERT INTO CHECK_UP (
+            MEDICAL_SERVICE, PET_ID, VET_ID, SYMPTOMS, DIAGNOSIS,
+            PRESCRIPTION_AVAILABLE, FOLLOW_UP_VISIT, STATUS
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """
+    
+    count = 0
+    batch = []
+    for _ in range(n):
         pet_id = random.choice(pet_ids)
         med_service_id = random.choice(medical_service_ids)
         vet_id = random.choice(vet_ids)
         symptoms = random.choice(symptoms_list)
         diagnosis = random.choice(diagnosis_list)
         status = random.choice(["Chờ", "Hoàn tất"])
-
         visit_date = random_date_between(start_date, end_date)
-        follow_up = None
-        if random.random() < 0.3:
-            follow_up = visit_date + timedelta(days=random.randint(7, 30))
+        follow_up = visit_date + timedelta(days=random.randint(7, 30)) if random.random() < 0.3 else None
+        has_prescription = 1 if random.random() < 0.7 else 0
 
-        cursor.execute(
-            """
-            INSERT INTO CHECK_UP (
-                MEDICAL_SERVICE,
-                PET_ID,
-                VET_ID,
-                SYMPTOMS,
-                DIAGNOSIS,
-                PRESCRIPTION_AVAILABLE,
-                FOLLOW_UP_VISIT,
-                STATUS
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                med_service_id,
-                pet_id,
-                vet_id,
-                symptoms,
-                diagnosis,
-                1 if random.random() < 0.7 else 0,
-                follow_up,
-                status,
-            ),
-        )
-
-        if i % batch_size == 0:
+        batch.append((med_service_id, pet_id, vet_id, symptoms, diagnosis, has_prescription, follow_up, status))
+        
+        if len(batch) >= 1000:  # Smaller batch to be safe
+            cursor.executemany(sql, batch)
             conn.commit()
-            print(f"  > Đã insert {i} CHECK_UP...")
-
-    conn.commit()
-    print("Hoàn thành sinh CHECK_UP.")
+            count += len(batch)
+            print(f"  > CHECK_UP: {count:,}/{n:,} inserted...")
+            batch = []
+    
+    if batch:
+        cursor.executemany(sql, batch)
+        conn.commit()
+        count += len(batch)
+    
+    print(f"Completed: {count:,} checkups inserted.")
 
 
 # ==============================
-# 4. INSERT RECEIPT
+# 4. INSERT RECEIPT (BULK with small batches)
 # ==============================
 def insert_receipts(n=N_RECEIPTS):
-    print("Đang lấy CUSTOMER_ID và BRANCH_ID để sinh RECEIPT...")
+    print(f"Generating {n:,} receipts...")
     customer_ids = fetch_ids("SELECT CUSTOMER_ID FROM CUSTOMER")
     if not receptionist_ids:
-        raise RuntimeError("Không có RECEPTIONIST/SALES trong EMPLOYEE để gán vào RECEIPT.")
+        raise RuntimeError("No RECEPTIONIST/SALES found in EMPLOYEE.")
 
-    batch_size = 1000
     start_date = datetime.now() - timedelta(days=365 * 3)
     end_date = datetime.now()
-
     payment_methods = ["Tiền mặt", "Thẻ", "Chuyển khoản"]
-    statuses = ["Đã hoàn thành", "Chờ thanh toán", "Hủy"]
 
-    print(f"Đang sinh {n} RECEIPT...")
-    for i in range(1, n + 1):
+    sql = """
+        INSERT INTO RECEIPT (
+            BRANCH_ID, CUSTOMER_ID, RECEPTIONIST_ID, RECEIPT_CREATED_DATE,
+            RECEIPT_TOTAL_PRICE, RECEIPT_PAYMENT_METHOD, RECEIPT_STATUS
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    """
+    
+    count = 0
+    batch = []
+    for _ in range(n):
         branch_id = random.choice(branch_ids)
         customer_id = random.choice(customer_ids)
         receptionist_id = random.choice(receptionist_ids)
         created_at = random_date_between(start_date, end_date)
-
-        # Tổng tiền random, có thể không khớp 100% detail nhưng đủ realistic
         total_price = random.randint(50000, 5000000)
         payment_method = random.choice(payment_methods)
+        
         status_prob = random.random()
         if status_prob < 0.8:
             status = "Đã hoàn thành"
@@ -370,174 +315,109 @@ def insert_receipts(n=N_RECEIPTS):
         else:
             status = "Hủy"
 
-        cursor.execute(
-            """
-            INSERT INTO RECEIPT (
-                BRANCH_ID,
-                CUSTOMER_ID,
-                RECEPTIONIST_ID,
-                RECEIPT_CREATED_DATE,
-                RECEIPT_TOTAL_PRICE,
-                RECEIPT_PAYMENT_METHOD,
-                RECEIPT_STATUS
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                branch_id,
-                customer_id,
-                receptionist_id,
-                created_at,
-                total_price,
-                payment_method,
-                status,
-            ),
-        )
-
-        if i % batch_size == 0:
+        batch.append((branch_id, customer_id, receptionist_id, created_at, total_price, payment_method, status))
+        
+        if len(batch) >= 1000:
+            cursor.executemany(sql, batch)
             conn.commit()
-            print(f"  > Đã insert {i} RECEIPT...")
-
-    conn.commit()
-    print("Hoàn thành sinh RECEIPT.")
+            count += len(batch)
+            print(f"  > RECEIPT: {count:,}/{n:,} inserted...")
+            batch = []
+    
+    if batch:
+        cursor.executemany(sql, batch)
+        conn.commit()
+        count += len(batch)
+    
+    print(f"Completed: {count:,} receipts inserted.")
 
 
 # ==============================
-# 5. INSERT RECEIPT_DETAIL
+# 5. INSERT RECEIPT_DETAIL (BULK with small batches)
 # ==============================
 def insert_receipt_details():
-    print("Đang lấy RECEIPT_ID để sinh RECEIPT_DETAIL...")
-    cursor.execute("SELECT RECEIPT_ID FROM RECEIPT")
-    receipt_ids = [row[0] for row in cursor.fetchall()]
-
+    print("Generating receipt details...")
+    receipt_ids = fetch_ids("SELECT RECEIPT_ID FROM RECEIPT")
     if not receipt_ids:
-        raise RuntimeError("Không có RECEIPT nào để tạo RECEIPT_DETAIL.")
+        raise RuntimeError("No RECEIPT found for RECEIPT_DETAIL.")
 
-    # Map SALES_PRODUCT -> PRODUCT_ID cho tiện chọn
-    cursor.execute(
-        """
+    cursor.execute("""
         SELECT S.SALES_PRODUCT_ID, P.PRODUCT_ID, S.SALES_PRODUCT_PRICE
         FROM SALES_PRODUCT S
         JOIN PRODUCT P ON P.PRODUCT_ID = S.SALES_PRODUCT_ID
-        """
-    )
-    sales_rows = cursor.fetchall()
-    if not sales_rows:
-        raise RuntimeError("Không có SALES_PRODUCT/PRODUCT để tạo RECEIPT_DETAIL.")
+    """)
+    sale_items = [(row[0], row[1], row[2]) for row in cursor.fetchall()]
+    if not sale_items:
+        raise RuntimeError("No SALES_PRODUCT found.")
 
-    sale_items = [
-        (row[0], row[1], row[2])  # (SALES_PRODUCT_ID, PRODUCT_ID, PRICE)
-        for row in sales_rows
-    ]
+    pet_ids = fetch_ids("SELECT PET_ID FROM PET")
+    pet_ids_or_null = pet_ids + [None] * 5
 
-    cursor.execute("SELECT PET_ID FROM PET")
-    pet_ids = [row[0] for row in cursor.fetchall()]
-    pet_ids_or_null = pet_ids + [None] * 5  # tăng tỷ lệ NULL
-
-    batch_size = 2000
+    sql = """
+        INSERT INTO RECEIPT_DETAIL (
+            RECEIPT_ITEM_ID, RECEIPT_ID, PRODUCT_ID, PET_ID, RECEIPT_ITEM_AMOUNT, RECEIPT_ITEM_PRICE
+        ) VALUES (?, ?, ?, ?, ?, ?)
+    """
+    
     count = 0
-
-    print("Đang sinh RECEIPT_DETAIL...")
-    for receipt_id in receipt_ids:
+    batch = []
+    total_receipts = len(receipt_ids)
+    
+    for idx, receipt_id in enumerate(receipt_ids):
         num_items = random.randint(1, MAX_ITEMS_PER_RECEIPT)
         for item_index in range(1, num_items + 1):
             sale_product_id, product_id, price = random.choice(sale_items)
             qty = random.randint(1, 5)
             pet_id = random.choice(pet_ids_or_null)
-
-            cursor.execute(
-                """
-                INSERT INTO RECEIPT_DETAIL (
-                    RECEIPT_ITEM_ID,
-                    RECEIPT_ID,
-                    PRODUCT_ID,
-                    PET_ID,
-                    RECEIPT_ITEM_AMOUNT,
-                    RECEIPT_ITEM_PRICE
-                ) VALUES (?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    item_index,  # item id per receipt
-                    receipt_id,
-                    product_id,
-                    pet_id,
-                    qty,
-                    price,
-                ),
-            )
-            count += 1
-
-            if count % batch_size == 0:
+            batch.append((item_index, receipt_id, product_id, pet_id, qty, price))
+            
+            if len(batch) >= 1000:
+                cursor.executemany(sql, batch)
                 conn.commit()
-                print(f"  > Đã insert {count} RECEIPT_DETAIL...")
-
-    conn.commit()
-    print(f"Hoàn thành sinh RECEIPT_DETAIL. Tổng dòng ~{count}")
+                count += len(batch)
+                print(f"  > RECEIPT_DETAIL: {count:,} inserted...")
+                batch = []
+    
+    if batch:
+        cursor.executemany(sql, batch)
+        conn.commit()
+        count += len(batch)
+    
+    print(f"Completed: {count:,} receipt details inserted.")
 
 
 # ==============================
-# 6. INSERT CUSTOMER_SPENDING (tính từ RECEIPT)
+# 6. REBUILD CUSTOMER_SPENDING
 # ==============================
 def rebuild_customer_spending():
-    print("Đang tái tạo CUSTOMER_SPENDING từ RECEIPT...")
-
-    # Xoá cũ (nếu có)
+    print("Rebuilding CUSTOMER_SPENDING from RECEIPT...")
     cursor.execute("DELETE FROM CUSTOMER_SPENDING")
     conn.commit()
 
-    # Gom doanh thu theo CUSTOMER_ID + YEAR
-    cursor.execute(
-        """
-            SELECT
-                CUSTOMER_ID,
-                YEAR(RECEIPT_CREATED_DATE) AS Y,
-                SUM(RECEIPT_TOTAL_PRICE) AS TOTAL_SPENT
-            FROM RECEIPT
-            WHERE RECEIPT_STATUS = ?
-            GROUP BY CUSTOMER_ID, YEAR(RECEIPT_CREATED_DATE)
-            """,
-        ("Đã hoàn thành",)   # pyodbc truyền Unicode param, không bị lỗi code page
-    )
-
+    cursor.execute("""
+        SELECT CUSTOMER_ID, YEAR(RECEIPT_CREATED_DATE), SUM(RECEIPT_TOTAL_PRICE)
+        FROM RECEIPT
+        WHERE RECEIPT_STATUS = N'Đã hoàn thành'
+        GROUP BY CUSTOMER_ID, YEAR(RECEIPT_CREATED_DATE)
+    """)
     rows = cursor.fetchall()
-    batch_size = 1000
-    count = 0
 
-    for row in rows:
-        customer_id, year, total_spent = row
-        cursor.execute(
-            """
-            INSERT INTO CUSTOMER_SPENDING (CUSTOMER_ID, YEAR, MONEY_SPENT)
-            VALUES (?, ?, ?)
-            """,
-            (customer_id, int(year), int(total_spent)),
-        )
-        count += 1
-        if count % batch_size == 0:
-            conn.commit()
-            print(f"  > Đã insert {count} CUSTOMER_SPENDING...")
+    data = [(row[0], int(row[1]), int(row[2])) for row in rows]
 
-    conn.commit()
-    print(f"Hoàn thành CUSTOMER_SPENDING với {count} dòng.")
+    sql = "INSERT INTO CUSTOMER_SPENDING (CUSTOMER_ID, YEAR, MONEY_SPENT) VALUES (?, ?, ?)"
+    bulk_insert(sql, data, "CUSTOMER_SPENDING")
+    print(f"Completed: {len(data):,} customer spending records.")
 
 
 # ==============================
-# 7. INSERT REVIEW
+# 7. INSERT REVIEW (BULK)
 # ==============================
 def insert_reviews():
-    print("Đang sinh REVIEW cho một phần RECEIPT...")
-
-    cursor.execute(
-        """
-            SELECT RECEIPT_ID
-            FROM RECEIPT
-            WHERE RECEIPT_STATUS = ?
-            """,
-        ("Đã hoàn thành",)
-    )
-
+    print("Generating reviews...")
+    cursor.execute("SELECT RECEIPT_ID FROM RECEIPT WHERE RECEIPT_STATUS = N'Đã hoàn thành'")
     receipt_ids = [row[0] for row in cursor.fetchall()]
     if not receipt_ids:
-        print("Không có hoá đơn 'Đã hoàn thành' để tạo REVIEW.")
+        print("No completed receipts for REVIEW.")
         return
 
     random.shuffle(receipt_ids)
@@ -556,102 +436,92 @@ def insert_reviews():
         "Nhân viên thu ngân chưa nhiệt tình lắm.",
     ]
 
-    batch_size = 1000
-    count = 0
-
+    data = []
     for rid in chosen_ids:
-        # điểm 0-10
         service_score = random.randint(6, 10)
         staff_score = random.randint(6, 10)
-        overall_score = int(round((service_score + staff_score) / 2 + random.randint(-1, 1)))
-        overall_score = max(0, min(10, overall_score))
+        overall_score = max(0, min(10, int(round((service_score + staff_score) / 2 + random.randint(-1, 1)))))
+        comment = random.choice(comments_good) if overall_score >= 7 else random.choice(comments_bad)
+        data.append((rid, service_score, staff_score, overall_score, comment))
 
-        if overall_score >= 7:
-            comment = random.choice(comments_good)
-        else:
-            comment = random.choice(comments_bad)
-
-        cursor.execute(
-            """
-            INSERT INTO REVIEW (
-                RECEIPT_ID,
-                SERVICE_SCORE,
-                STAFF_SCORE,
-                OVERALL_SCORE,
-                COMMENT
-            ) VALUES (?, ?, ?, ?, ?)
-            """,
-            (rid, service_score, staff_score, overall_score, comment),
-        )
-        count += 1
-
-        if count % batch_size == 0:
-            conn.commit()
-            print(f"  > Đã insert {count} REVIEW...")
-
-    conn.commit()
-    print(f"Hoàn thành sinh REVIEW: {count} dòng.")
+    sql = """
+        INSERT INTO REVIEW (
+            RECEIPT_ID, SERVICE_SCORE, STAFF_SCORE, OVERALL_SCORE, COMMENT
+        ) VALUES (?, ?, ?, ?, ?)
+    """
+    bulk_insert(sql, data, "REVIEW")
+    print(f"Completed: {len(data):,} reviews inserted.")
 
 
 # ==============================
 # MAIN
 # ==============================
 if __name__ == "__main__":
+    import time
+    start_time = time.time()
+    
     try:
-        print("=== BẮT ĐẦU SINH DỮ LIỆU LỚN CHO PETCAREX ===")
+        print("=" * 60)
+        print("PETCAREX BULK DATA SEEDING (Optimized)")
+        print(f"Target: {N_CUSTOMERS:,} customers, ~{N_CUSTOMERS*1.5:,.0f} pets")
+        print("=" * 60)
 
         # 1. CUSTOMER
         cursor.execute("SELECT COUNT(*) FROM CUSTOMER")
-        existing_customers = cursor.fetchone()[0]
-        if existing_customers < N_CUSTOMERS:
-            insert_customers(N_CUSTOMERS - existing_customers)
+        existing = cursor.fetchone()[0]
+        if existing < N_CUSTOMERS:
+            insert_customers(N_CUSTOMERS - existing)
         else:
-            print(f"Đã có {existing_customers} CUSTOMER, bỏ qua bước tạo thêm.")
+            print(f"Already have {existing:,} customers, skipping.")
 
         # 2. PET
         cursor.execute("SELECT COUNT(*) FROM PET")
-        existing_pets = cursor.fetchone()[0]
-        if existing_pets == 0:
+        existing = cursor.fetchone()[0]
+        if existing == 0:
             insert_pets()
         else:
-            print(f"Đã có {existing_pets} PET, bỏ qua bước tạo thêm.")
+            print(f"Already have {existing:,} pets, skipping.")
 
         # 3. CHECK_UP
         cursor.execute("SELECT COUNT(*) FROM CHECK_UP")
-        existing_checkups = cursor.fetchone()[0]
-        if existing_checkups < N_CHECKUPS:
-            insert_checkups(N_CHECKUPS - existing_checkups)
+        existing = cursor.fetchone()[0]
+        if existing < N_CHECKUPS:
+            insert_checkups(N_CHECKUPS - existing)
         else:
-            print(f"Đã có {existing_checkups} CHECK_UP, bỏ qua bước tạo thêm.")
+            print(f"Already have {existing:,} checkups, skipping.")
 
         # 4. RECEIPT
         cursor.execute("SELECT COUNT(*) FROM RECEIPT")
-        existing_receipts = cursor.fetchone()[0]
-        if existing_receipts < N_RECEIPTS:
-            insert_receipts(N_RECEIPTS - existing_receipts)
+        existing = cursor.fetchone()[0]
+        if existing < N_RECEIPTS:
+            insert_receipts(N_RECEIPTS - existing)
         else:
-            print(f"Đã có {existing_receipts} RECEIPT, bỏ qua bước tạo thêm.")
+            print(f"Already have {existing:,} receipts, skipping.")
 
         # 5. RECEIPT_DETAIL
         cursor.execute("SELECT COUNT(*) FROM RECEIPT_DETAIL")
-        existing_details = cursor.fetchone()[0]
-        if existing_details == 0:
+        existing = cursor.fetchone()[0]
+        if existing == 0:
             insert_receipt_details()
         else:
-            print(f"Đã có {existing_details} RECEIPT_DETAIL, bỏ qua bước tạo thêm.")
+            print(f"Already have {existing:,} receipt details, skipping.")
 
         # 6. CUSTOMER_SPENDING
         rebuild_customer_spending()
 
         # 7. REVIEW
         cursor.execute("SELECT COUNT(*) FROM REVIEW")
-        existing_reviews = cursor.fetchone()[0]
-        if existing_reviews == 0:
+        existing = cursor.fetchone()[0]
+        if existing == 0:
             insert_reviews()
         else:
-            print(f"Đã có {existing_reviews} REVIEW, bỏ qua bước tạo thêm.")
+            print(f"Already have {existing:,} reviews, skipping.")
 
-        print("=== HOÀN TẤT SINH DỮ LIỆU LỚN CHO PETCAREX ===")
+        elapsed = time.time() - start_time
+        print("=" * 60)
+        print(f"COMPLETED in {elapsed:.1f} seconds ({elapsed/60:.1f} minutes)")
+        print("=" * 60)
+
     finally:
         cursor.close()
         conn.close()

@@ -11,11 +11,21 @@ router.get('/', requireRole('RECEP', 'VET', 'MGR', 'DIRECTOR'), async (req, res)
     const { status, page = 1 } = req.query;
     const vetId = emp.position === 'VET' ? emp.id : null;
     try {
-        const { checkups, total, limit } = await checkupModel.getAll({ vetId, status, page: parseInt(page) });
+        const result = await checkupModel.getAll({ vetId, status, page: parseInt(page) });
+        console.log('=== CHECKUPS DEBUG ===');
+        console.log('Result type:', typeof result);
+        console.log('Result keys:', Object.keys(result));
+        console.log('Checkups type:', typeof result.checkups);
+        console.log('Checkups is array:', Array.isArray(result.checkups));
+        console.log('Checkups length:', result.checkups?.length);
+        console.log('First checkup:', result.checkups?.[0]);
+        console.log('=== END DEBUG ===');
+
+        const { checkups, total, limit } = result;
         const totalPages = Math.ceil(total / limit);
         res.render('checkups/list', { title: 'Phiếu khám', checkups, status, page: parseInt(page), totalPages, error: null, employee: emp });
     } catch (err) {
-        console.error(err);
+        console.error('CHECKUPS ERROR:', err);
         res.render('checkups/list', { title: 'Phiếu khám', checkups: [], status: '', page: 1, totalPages: 0, error: err.message, employee: emp });
     }
 });

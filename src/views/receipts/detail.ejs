@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head><%- include('../partials/common/head') %>
+        <link rel="stylesheet" href="/css/management-styles.css">
+</head>
+
+<body>
+    <div class="app-wrapper">
+        <%- include('../partials/management/navbar') %>
+            <div class="d-flex flex-grow-1">
+                <%- include('../partials/management/sidebar') %>
+                    <main class="flex-grow-1 p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h1 class="h3 mb-0">
+                                <%= title %>
+                            </h1>
+                            <a href="/receipts" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>Quay lại
+                            </a>
+                        </div>
+
+                        <% if (typeof error !=='undefined' && error) { %>
+                            <div class="alert alert-danger">
+                                <%= error %>
+                            </div>
+                            <% } %>
+
+                                <% if (typeof success !=='undefined' && success) { %>
+                                    <div class="alert alert-success">
+                                        <%= success %>
+                                    </div>
+                                    <% } %>
+
+                                        <div class="row g-4">
+                                            <div class="col-md-6">
+                                                <div class="card">
+                                                    <div class="card-header">Thông tin hóa đơn</div>
+                                                    <div class="card-body">
+                                                        <p><strong>Mã hóa đơn:</strong> #<%= receipt.RECEIPT_ID %>
+                                                        </p>
+                                                        <p><strong>Ngày tạo:</strong>
+                                                            <%= receipt.RECEIPT_CREATED_DATE ? new
+                                                                Date(receipt.RECEIPT_CREATED_DATE).toLocaleString('vi-VN')
+                                                                : '-' %>
+                                                        </p>
+                                                        <p><strong>Chi nhánh:</strong>
+                                                            <%= receipt.branchName || 'N/A' %>
+                                                        </p>
+                                                        <p><strong>Nhân viên:</strong>
+                                                            <%= receipt.employeeName || 'N/A' %>
+                                                        </p>
+                                                        <p><strong>Khách hàng:</strong>
+                                                            <% if (receipt.CUSTOMER_ID) { %>
+                                                                <a href="/customers/<%= receipt.CUSTOMER_ID %>">
+                                                                    <%= receipt.customerName || 'N/A' %>
+                                                                </a>
+                                                                <% } else { %>
+                                                                    N/A
+                                                                    <% } %>
+                                                        </p>
+                                                        <p><strong>Phương thức thanh toán:</strong>
+                                                            <%= receipt.RECEIPT_PAYMENT_METHOD || 'N/A' %>
+                                                        </p>
+                                                        <p><strong>Tổng tiền:</strong>
+                                                            <span class="text-primary fw-bold fs-5">
+                                                                <%= receipt.RECEIPT_TOTAL_PRICE ?
+                                                                    receipt.RECEIPT_TOTAL_PRICE.toLocaleString('vi-VN')
+                                                                    + 'đ' : '0đ' %>
+                                                            </span>
+                                                        </p>
+                                                        <p><strong>Trạng thái:</strong>
+                                                            <span
+                                                                class="badge bg-<%= receipt.RECEIPT_STATUS === 'Đã hoàn thành' ? 'success' : receipt.RECEIPT_STATUS === 'Chờ thanh toán' ? 'warning' : 'secondary' %>">
+                                                                <%= receipt.RECEIPT_STATUS %>
+                                                            </span>
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-6">
+                                                <div class="card">
+                                                    <div class="card-header">Thao tác</div>
+                                                    <div class="card-body">
+                                                        <% if (receipt.RECEIPT_STATUS==='Chờ thanh toán' ) { %>
+                                                            <form method="POST"
+                                                                action="/receipts/<%= receipt.RECEIPT_ID %>/complete">
+                                                                <button type="submit" class="btn btn-success w-100">
+                                                                    <i class="bi bi-check-circle me-2"></i>Hoàn thành
+                                                                    thanh toán
+                                                                </button>
+                                                            </form>
+                                                            <p class="text-muted small mt-2">
+                                                                Nhấn để xác nhận thanh toán và tích điểm cho khách hàng.
+                                                            </p>
+                                                            <% } else if (receipt.RECEIPT_STATUS==='Đã hoàn thành' ) {
+                                                                %>
+                                                                <div class="text-center text-success py-3">
+                                                                    <i class="bi bi-check-circle-fill fs-1"></i>
+                                                                    <p class="mt-2 mb-0">Hóa đơn đã được thanh toán</p>
+                                                                </div>
+                                                                <% } else { %>
+                                                                    <div class="text-center text-muted py-3">
+                                                                        <i class="bi bi-x-circle fs-1"></i>
+                                                                        <p class="mt-2 mb-0">Hóa đơn đã bị hủy</p>
+                                                                    </div>
+                                                                    <% } %>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="card mt-4">
+                                            <div class="card-header">Chi tiết sản phẩm/dịch vụ</div>
+                                            <div class="table-responsive">
+                                                <table class="table table-hover mb-0">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>#</th>
+                                                            <th>Sản phẩm/Dịch vụ</th>
+                                                            <th>Số lượng</th>
+                                                            <th>Đơn giá</th>
+                                                            <th>Thành tiền</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <% if (receipt.details && receipt.details.length> 0) { %>
+                                                            <% receipt.details.forEach((item, idx)=> { %>
+                                                                <tr>
+                                                                    <td>
+                                                                        <%= idx + 1 %>
+                                                                    </td>
+                                                                    <td>
+                                                                        <%= item.productName || 'N/A' %>
+                                                                    </td>
+                                                                    <td>
+                                                                        <%= item.RECEIPT_ITEM_AMOUNT || 1 %>
+                                                                    </td>
+                                                                    <td>
+                                                                        <%= item.RECEIPT_ITEM_PRICE ?
+                                                                            item.RECEIPT_ITEM_PRICE.toLocaleString('vi-VN')
+                                                                            + 'đ' : '-' %>
+                                                                    </td>
+                                                                    <td>
+                                                                        <%= (item.RECEIPT_ITEM_AMOUNT *
+                                                                            item.RECEIPT_ITEM_PRICE).toLocaleString('vi-VN')
+                                                                            %>đ
+                                                                    </td>
+                                                                </tr>
+                                                                <% }) %>
+                                                                    <% } else { %>
+                                                                        <tr>
+                                                                            <td colspan="5"
+                                                                                class="text-center text-muted py-3">Chưa
+                                                                                có chi tiết</td>
+                                                                        </tr>
+                                                                        <% } %>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                    </main>
+            </div>
+    </div>
+    <%- include('../partials/common/scripts') %>
+</body>
+
+</html>

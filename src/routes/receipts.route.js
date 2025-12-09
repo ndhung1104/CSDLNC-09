@@ -10,7 +10,8 @@ router.get('/', requireRole('RECEP', 'SALES', 'MGR', 'DIRECTOR'), async (req, re
     const emp = req.session.employee;
     const { status, page = 1 } = req.query;
     try {
-        const { receipts, total, limit } = await receiptModel.getAll({ branchId: emp.branchId, status, page: parseInt(page) });
+        // Show all receipts (not filtered by branch for easier viewing)
+        const { receipts, total, limit } = await receiptModel.getAll({ status, page: parseInt(page) });
         const totalPages = Math.ceil(total / limit);
         res.render('receipts/list', { title: 'Hóa đơn', receipts, status, page: parseInt(page), totalPages, error: null, employee: emp });
     } catch (err) {

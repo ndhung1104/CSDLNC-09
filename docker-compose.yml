@@ -33,12 +33,19 @@ services:
       - ./PETCAREX_Script.sql:/scripts/PETCAREX_Script.sql
       - ./PETCAREX_Function.sql:/scripts/PETCAREX_Function.sql
       - ./seed_master.sql:/scripts/seed_master.sql
-      - ./init-db.sh:/scripts/init-db.sh
     environment:
       SA_PASSWORD: "PetCareX@2024"
     networks:
       - petcarex-network
-    entrypoint: ["/bin/bash", "/scripts/init-db.sh"]
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        sleep 5
+        /opt/mssql-tools18/bin/sqlcmd -S mssql -U sa -P "$$SA_PASSWORD" -d master -i /scripts/PETCAREX_Script.sql -C
+        /opt/mssql-tools18/bin/sqlcmd -S mssql -U sa -P "$$SA_PASSWORD" -d PETCAREX -i /scripts/PETCAREX_Function.sql -C
+        /opt/mssql-tools18/bin/sqlcmd -S mssql -U sa -P "$$SA_PASSWORD" -d PETCAREX -i /scripts/seed_master.sql -C
+        echo "DB init complete!"
 
   app:
     build:

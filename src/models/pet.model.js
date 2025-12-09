@@ -1,13 +1,14 @@
 import db from '../utils/db.js';
 
 // Get all pets with owner info
-export async function getAll({ search = '', page = 1, limit = 20 } = {}) {
+export async function getAll({ search = '', searchBy = 'pet', page = 1, limit = 20 } = {}) {
     const offset = (page - 1) * limit;
 
+    // Count query - simple, with join only if needed for search
     let countQuery = db('PET')
-        .join('PET_BREED', 'PET.PET_BREED_ID', 'PET_BREED.BREED_ID')
         .join('CUSTOMER', 'PET.CUSTOMER_ID', 'CUSTOMER.CUSTOMER_ID');
 
+    // Data query with all joins and columns
     let dataQuery = db('PET')
         .join('PET_BREED', 'PET.PET_BREED_ID', 'PET_BREED.BREED_ID')
         .join('CUSTOMER', 'PET.CUSTOMER_ID', 'CUSTOMER.CUSTOMER_ID')
@@ -23,12 +24,10 @@ export async function getAll({ search = '', page = 1, limit = 20 } = {}) {
         );
 
     if (search) {
-        const searchCondition = function () {
-            this.where('PET.PET_NAME', 'like', `%${search}%`)
-                .orWhere('CUSTOMER.CUSTOMER_NAME', 'like', `%${search}%`);
-        };
-        countQuery = countQuery.where(searchCondition);
-        dataQuery = dataQuery.where(searchCondition);
+        // Search by pet name or owner name based on searchBy parameter
+        const column = searchBy === 'owner' ? 'CUSTOMER.CUSTOMER_NAME' : 'PET.PET_NAME';
+        countQuery = countQuery.where(column, 'like', `%${search}%`);
+        dataQuery = dataQuery.where(column, 'like', `%${search}%`);
     }
 
     const total = await countQuery.count('* as count').first();

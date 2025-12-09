@@ -291,3 +291,91 @@ SELECT
 FROM BRANCH B
 CROSS JOIN SALES_PRODUCT S;
 GO
+
+/* ==========================================
+   16. SAMPLE CUSTOMERS (for testing)
+   ========================================== */
+DECLARE @CustomerId1 INT, @CustomerId2 INT, @CustomerId3 INT;
+
+EXEC dbo.uspCustomerCreate
+    @CustomerName = N'Nguyễn Văn An',
+    @CustomerPhone = '0901234567',
+    @CustomerEmail = 'nguyenvanan@gmail.com',
+    @CustomerPassword = 'customer_pwd_001',
+    @CustomerGender = N'Nam',
+    @CustomerBirthdate = '1990-05-15',
+    @CustomerId = @CustomerId1 OUTPUT;
+
+EXEC dbo.uspCustomerCreate
+    @CustomerName = N'Trần Thị Bình',
+    @CustomerPhone = '0912345678',
+    @CustomerEmail = 'tranthiminh@gmail.com',
+    @CustomerPassword = 'customer_pwd_002',
+    @CustomerGender = N'Nữ',
+    @CustomerBirthdate = '1988-03-20',
+    @CustomerId = @CustomerId2 OUTPUT;
+
+EXEC dbo.uspCustomerCreate
+    @CustomerName = N'Lê Hoàng Cường',
+    @CustomerPhone = '0923456789',
+    @CustomerEmail = 'lehoangcuong@gmail.com',
+    @CustomerPassword = 'customer_pwd_003',
+    @CustomerGender = N'Nam',
+    @CustomerBirthdate = '1995-11-10',
+    @CustomerId = @CustomerId3 OUTPUT;
+
+/* ==========================================
+   17. SAMPLE PETS (for testing)
+   ========================================== */
+DECLARE @PetId INT;
+
+-- Customer 1's pets
+EXEC dbo.uspPetCreateForCustomer
+    @CustomerId = @CustomerId1,
+    @PetName = N'Milu',
+    @PetBreedId = 1, -- Poodle
+    @PetGender = N'Nam',
+    @PetBirthdate = '2022-01-10',
+    @PetHealthStatus = N'Khỏe mạnh',
+    @PetId = @PetId OUTPUT;
+
+EXEC dbo.uspPetCreateForCustomer
+    @CustomerId = @CustomerId1,
+    @PetName = N'Bông',
+    @PetBreedId = 6, -- Mèo ta
+    @PetGender = N'Nữ',
+    @PetBirthdate = '2023-03-15',
+    @PetHealthStatus = N'Khỏe mạnh',
+    @PetId = @PetId OUTPUT;
+
+-- Customer 2's pets
+EXEC dbo.uspPetCreateForCustomer
+    @CustomerId = @CustomerId2,
+    @PetName = N'Lucky',
+    @PetBreedId = 4, -- Golden
+    @PetGender = N'Nam',
+    @PetBirthdate = '2021-06-20',
+    @PetHealthStatus = N'Khỏe mạnh',
+    @PetId = @PetId OUTPUT;
+
+EXEC dbo.uspPetCreateForCustomer
+    @CustomerId = @CustomerId2,
+    @PetName = N'Mimi',
+    @PetBreedId = 7, -- Mèo Anh lông ngắn
+    @PetGender = N'Nữ',
+    @PetBirthdate = '2022-09-01',
+    @PetHealthStatus = N'Đang điều trị',
+    @PetId = @PetId OUTPUT;
+
+-- Customer 3's pets
+EXEC dbo.uspPetCreateForCustomer
+    @CustomerId = @CustomerId3,
+    @PetName = N'Max',
+    @PetBreedId = 2, -- Husky
+    @PetGender = N'Nam',
+    @PetBirthdate = '2020-12-25',
+    @PetHealthStatus = N'Khỏe mạnh',
+    @PetId = @PetId OUTPUT;
+
+PRINT N'Sample customers and pets created successfully!';
+GO
