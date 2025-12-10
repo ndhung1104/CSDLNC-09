@@ -1,26 +1,49 @@
+<% 
+  const mgrName = (typeof employee !== 'undefined' && employee?.name) || (typeof user !== 'undefined' && user?.name) || 'Admin';
+  const mgrEmail = (typeof employee !== 'undefined' && employee?.email) || (typeof user !== 'undefined' && user?.email) || 'admin@petcarex.com';
+  const mgrInitials = (typeof employee !== 'undefined' && employee?.name)
+    ? employee.name.split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase()
+    : (typeof user !== 'undefined' && user?.initials) || 'AD';
+%>
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="/dashboard"><i class="bi bi-gem me-2"></i>PetCareX Luxury</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
+  <div class="container-fluid">
+    <button
+      class="btn btn-outline-light d-lg-none me-2"
+      type="button"
+      data-bs-toggle="offcanvas"
+      data-bs-target="#managementSidebar"
+    >
+      <i class="bi bi-list"></i>
+    </button>
+    <a class="navbar-brand" href="/management/customers">
+      <i class="bi bi-heart-pulse-fill me-2"></i>
+      <strong>PETCAREX</strong>
+      Management
+    </a>
+    <div class="d-flex align-items-center ms-auto">
+      <!-- <button class="btn btn-link text-light position-relative me-3" type="button">
+        <i class="bi bi-bell"></i>
+        <span
+          class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+          style="font-size: 0.6rem;"
+        >
+          5
+        </span>
+      </button> -->
+      <div class="dropdown">
+        <button class="btn d-flex align-items-center text-light" type="button" data-bs-toggle="dropdown">
+          <span class="avatar-circle me-2"><%= mgrInitials %></span>
+          <span class="d-none d-md-inline"><%= mgrName %></span>
         </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ms-auto align-items-center">
-                <li class="nav-item">
-                    <span class="nav-link text-white me-3">
-                        <i class="bi bi-person-circle me-2"></i>
-                        <%= typeof employee !=='undefined' ? employee.name : 'Nhân viên' %>
-                            <span class="badge bg-light text-dark ms-1">
-                                <%= typeof employee !=='undefined' ? employee.position : '' %>
-                            </span>
-                    </span>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link btn btn-outline-light btn-sm px-3 text-white border-white" href="/logout">Đăng
-                        xuất</a>
-                </li>
-            </ul>
-        </div>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><h6 class="dropdown-header"><%= mgrEmail %></h6></li>
+          <!-- <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/management/profile">Profile</a></li>
+          <li><a class="dropdown-item" href="/management/settings">Settings</a></li>
+          <li><hr class="dropdown-divider"></li> -->
+          <li><a class="dropdown-item text-danger" href="/logout">Logout</a></li>
+        </ul>
+      </div>
     </div>
+  </div>
 </nav>
