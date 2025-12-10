@@ -105,7 +105,7 @@ BEGIN
             CUSTOMER_NAME,
             CUSTOMER_PHONE,
             CUSTOMER_EMAIL,
-            EMPLOYEE_PASSWORD,
+            CUSTOMER_PASSWORD,
             CUSTOMER_GENDER,
             CUSTOMER_BIRTHDATE,
             CUSTOMER_LOYALTY

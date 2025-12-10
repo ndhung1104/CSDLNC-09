@@ -1,5 +1,8 @@
 <% const bp = typeof basePath !== 'undefined' ? basePath : '/customer'; %>
 <% const showMgmt = typeof showManagementLink !== 'undefined' ? showManagementLink : true; %>
+<% const rawCustomerUser = (typeof customerUser !== 'undefined') ? customerUser : null; %>
+<% const rawUser = (typeof user !== 'undefined') ? user : null; %>
+<% const activeUser = rawCustomerUser || rawUser || null; %>
 <nav class="navbar navbar-expand-lg navbar-light customer-navbar sticky-top">
   <div class="container">
     <a class="navbar-brand d-flex align-items-center" href="<%= bp %>/dashboard">
@@ -12,7 +15,7 @@
         Management
       </a>
     <% } %>
-    <% if (typeof user !== 'undefined' && user) { %>
+    <% if (activeUser) { %>
       <button
         class="navbar-toggler"
         type="button"
@@ -55,8 +58,8 @@
               role="button"
               data-bs-toggle="dropdown"
             >
-              <span class="avatar-circle me-2"><%= user.initials %></span>
-              <%= user.name %>
+              <span class="avatar-circle me-2"><%= activeUser.initials || (activeUser.name ? activeUser.name.split(' ').map(p => p[0]).join('').slice(0,2).toUpperCase() : 'CU') %></span>
+              <%= activeUser.name %>
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
               <li>

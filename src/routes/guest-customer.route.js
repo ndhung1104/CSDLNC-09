@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import * as demoData from '../services/demoData.service.js';
+import { requireCustomer } from '../middleware/customer.middleware.js';
 
 const {
   getCustomerDashboardData,
@@ -26,7 +27,7 @@ function renderCustomerPage(res, view, options = {}) {
 }
 
 // Redirect base to dashboard for convenience
-router.get('/', (_req, res) => {
+router.get('/', requireCustomer, (_req, res) => {
   res.redirect(`${basePath}/dashboard`);
 });
 
@@ -37,14 +38,7 @@ router.get('/home', (_req, res) => {
   });
 });
 
-router.get('/login', (_req, res) => {
-  renderCustomerPage(res, 'customer/login', {
-    title: 'Login',
-    user: null,
-  });
-});
-
-router.get('/dashboard', (_req, res) => {
+router.get('/dashboard', requireCustomer, (_req, res) => {
   const data = getCustomerDashboardData();
   renderCustomerPage(res, 'customer/dashboard', {
     title: 'Dashboard',
@@ -52,7 +46,7 @@ router.get('/dashboard', (_req, res) => {
   });
 });
 
-router.get('/appointments', (_req, res) => {
+router.get('/appointments', requireCustomer, (_req, res) => {
   const data = getCustomerAppointmentsData();
   renderCustomerPage(res, 'customer/appointments', {
     title: 'Appointments',
@@ -60,7 +54,7 @@ router.get('/appointments', (_req, res) => {
   });
 });
 
-router.get('/appointments/new', (_req, res) => {
+router.get('/appointments/new', requireCustomer, (_req, res) => {
   const data = getCustomerNewAppointmentData();
   renderCustomerPage(res, 'customer/appointment-new', {
     title: 'New Appointment',
@@ -68,7 +62,7 @@ router.get('/appointments/new', (_req, res) => {
   });
 });
 
-router.get('/pets', (_req, res) => {
+router.get('/pets', requireCustomer, (_req, res) => {
   const data = getCustomerPetsData();
   renderCustomerPage(res, 'customer/pets', {
     title: 'My Pets',
@@ -76,7 +70,7 @@ router.get('/pets', (_req, res) => {
   });
 });
 
-router.get('/receipts', (_req, res) => {
+router.get('/receipts', requireCustomer, (_req, res) => {
   const data = getCustomerReceiptsData();
   renderCustomerPage(res, 'customer/receipts', {
     title: 'Receipts',

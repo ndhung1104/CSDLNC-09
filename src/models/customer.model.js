@@ -96,3 +96,19 @@ export async function findByPhoneOrEmail(phone, email) {
         .orWhere('CUSTOMER_EMAIL', email)
         .first();
 }
+
+// Find customer for authentication by email or phone
+export async function findByLogin(login) {
+    return db('CUSTOMER')
+        .select(
+            'CUSTOMER_ID as id',
+            'CUSTOMER_NAME as name',
+            'CUSTOMER_EMAIL as email',
+            'CUSTOMER_PHONE as phone',
+            'CUSTOMER_PASSWORD as password',
+            'MEMBERSHIP_RANK_ID as rankId'
+        )
+        .where('CUSTOMER_EMAIL', login)
+        .orWhere('CUSTOMER_PHONE', login)
+        .first();
+}

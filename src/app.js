@@ -15,6 +15,8 @@ import reportsRoutes from './routes/reports.route.js';
 import guestCustomerRoutes from './routes/guest-customer.route.js';
 import customerPortalRoutes from './routes/customer.route.js';
 import managementRoutes from './routes/management.route.js';
+import guestCustomerAuthRoutes from './routes/guest-customer-auth.route.js';
+import { injectCustomer } from './middleware/customer.middleware.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,6 +39,7 @@ app.use(session({
 }));
 
 app.use(injectUser);
+app.use(injectCustomer);
 
 app.get('/', (_req, res) => res.redirect('/login'));
 app.use('/', authRoutes);
@@ -50,6 +53,7 @@ app.use('/products', productsRoutes);
 app.use('/reports', reportsRoutes);
 app.use('/customer', customerPortalRoutes);
 app.use('/management', managementRoutes);
+app.use('/guest/customer', guestCustomerAuthRoutes);
 app.use('/guest/customer', guestCustomerRoutes);
 app.use('/api', (await import('./routes/api.route.js')).default);
 
