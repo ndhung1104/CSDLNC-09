@@ -89,6 +89,7 @@ export async function getByCustomerId(customerId) {
         .join('PET as p', 'c.PET_ID', 'p.PET_ID')
         .join('CUSTOMER as cu', 'p.CUSTOMER_ID', 'cu.CUSTOMER_ID')
         .leftJoin('EMPLOYEE as e', 'c.VET_ID', 'e.EMPLOYEE_ID')
+        .leftJoin('BRANCH as b', 'e.BRANCH_ID', 'b.BRANCH_ID')
         .select(
             'c.CHECK_UP_ID as id',
             'c.STATUS as status',
@@ -99,7 +100,8 @@ export async function getByCustomerId(customerId) {
             'p.PET_ID as petId',
             'cu.CUSTOMER_NAME as customerName',
             'cu.CUSTOMER_ID as customerId',
-            'e.EMPLOYEE_NAME as vetName'
+            'e.EMPLOYEE_NAME as vetName',
+            'b.BRANCH_NAME as branchName'
         )
         .where('cu.CUSTOMER_ID', customerId)
         .orderBy('c.CHECK_UP_ID', 'desc');

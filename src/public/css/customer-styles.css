@@ -89,6 +89,23 @@ body {
   color: #7f1d1d;
 }
 
+/* Navbar alignment tweaks */
+.navbar .nav-link {
+  display: flex;
+  align-items: center;
+}
+
+.navbar-nav .nav-item {
+  display: flex;
+  align-items: center;
+}
+
+.avatar-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 @media (max-width: 991.98px) {
   .customer-card:hover {
     transform: none;

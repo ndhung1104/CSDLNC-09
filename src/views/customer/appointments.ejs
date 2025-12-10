@@ -53,7 +53,11 @@
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
                           <li><a class="dropdown-item" href="<%= bp %>/appointments/<%= appointment.appointmentId %>/edit">Edit</a></li>
-                          <li><a class="dropdown-item text-danger" href="#" data-appointment-id="<%= appointment.appointmentId %>">Cancel</a></li>
+                          <li>
+                            <form method="POST" action="<%= bp %>/appointments/<%= appointment.appointmentId %>/cancel">
+                              <button class="dropdown-item text-danger" type="submit">Cancel</button>
+                            </form>
+                          </li>
                         </ul>
                       </div>
                     </div>

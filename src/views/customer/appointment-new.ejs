@@ -12,7 +12,7 @@
       <div class="col-lg-8">
         <div class="customer-card card">
           <div class="card-body p-4">
-            <form action="<%= bp %>/appointments" method="POST" id="appointmentForm">
+            <form action="<%= appointment ? (bp + '/appointments/' + appointment.id) : (bp + '/appointments') %>" method="POST" id="appointmentForm">
               <div class="mb-4">
                 <h5 class="mb-3">1. Select Your Pet</h5>
                 <div class="row g-3">
@@ -45,13 +45,13 @@
               <hr>
 
               <div class="mb-4">
-                <h5 class="mb-3">2. Select Service</h5>
-                <label for="serviceId" class="form-label">Service Type</label>
-                <select class="form-select" id="serviceId" name="serviceId" required>
-                  <option value="">Choose a service...</option>
-                  <% if (typeof services !== 'undefined' && services && services.length > 0) { %>
-                    <% services.forEach((service) => { %>
-                      <option value="<%= service.serviceId %>"><%= service.serviceName %> - $<%= service.price %></option>
+                <h5 class="mb-3">2. Select Branch</h5>
+                <label for="branchId" class="form-label">Clinic Location</label>
+                <select class="form-select" id="branchId" name="branchId" required>
+                  <option value="">Choose a branch...</option>
+                  <% if (typeof branches !== 'undefined' && branches && branches.length > 0) { %>
+                    <% branches.forEach((branch) => { %>
+                      <option value="<%= branch.branchId %>" <%= (appointment && appointment.branchId==branch.branchId) ? 'selected' : '' %>><%= branch.branchName %> - <%= branch.address %></option>
                     <% }); %>
                   <% } %>
                 </select>
@@ -60,13 +60,13 @@
               <hr>
 
               <div class="mb-4">
-                <h5 class="mb-3">3. Select Branch</h5>
-                <label for="branchId" class="form-label">Clinic Location</label>
-                <select class="form-select" id="branchId" name="branchId" required>
-                  <option value="">Choose a branch...</option>
-                  <% if (typeof branches !== 'undefined' && branches && branches.length > 0) { %>
-                    <% branches.forEach((branch) => { %>
-                      <option value="<%= branch.branchId %>"><%= branch.branchName %> - <%= branch.address %></option>
+                <h5 class="mb-3">3. Select Service</h5>
+                <label for="serviceId" class="form-label">Service Type</label>
+                <select class="form-select" id="serviceId" name="serviceId" required>
+                  <option value="">Choose a service...</option>
+                  <% if (typeof services !== 'undefined' && services && services.length > 0) { %>
+                    <% services.forEach((service) => { %>
+                      <option value="<%= service.serviceId %>" <%= (appointment && appointment.serviceId==service.serviceId) ? 'selected' : '' %>><%= service.serviceName %></option>
                     <% }); %>
                   <% } %>
                 </select>
@@ -79,21 +79,17 @@
                 <div class="row g-3">
                   <div class="col-md-6">
                     <label for="appointmentDate" class="form-label">Date</label>
-                    <input type="date" class="form-control" id="appointmentDate" name="appointmentDate" required>
+                    <input type="date" class="form-control" id="appointmentDate" name="appointmentDate" value="<%= appointment && appointment.date ? new Date(appointment.date).toISOString().split('T')[0] : '' %>" required>
                   </div>
                   <div class="col-md-6">
                     <label for="appointmentTime" class="form-label">Time</label>
                     <select class="form-select" id="appointmentTime" name="appointmentTime" required>
                       <option value="">Select time...</option>
-                      <option value="08:00">08:00 AM</option>
-                      <option value="09:00">09:00 AM</option>
-                      <option value="10:00">10:00 AM</option>
-                      <option value="11:00">11:00 AM</option>
-                      <option value="13:00">01:00 PM</option>
-                      <option value="14:00">02:00 PM</option>
-                      <option value="15:00">03:00 PM</option>
-                      <option value="16:00">04:00 PM</option>
-                      <option value="17:00">05:00 PM</option>
+                      <% const timeOptions = ['08:00','09:00','10:00','11:00','13:00','14:00','15:00','16:00','17:00']; %>
+                      <% const selectedTime = appointment && appointment.date ? new Date(appointment.date).toISOString().substring(11,16) : '' ; %>
+                      <% timeOptions.forEach(t => { %>
+                        <option value="<%= t %>" <%= selectedTime===t ? 'selected' : '' %>><%= t %></option>
+                      <% }) %>
                     </select>
                   </div>
                 </div>
@@ -110,7 +106,7 @@
               <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary btn-lg flex-grow-1">
                   <i class="bi bi-check-circle me-2"></i>
-                  Confirm Appointment
+                  <%= appointment ? 'Update Appointment' : 'Confirm Appointment' %>
                 </button>
                 <a href="<%= bp %>/appointments" class="btn btn-outline-secondary btn-lg">Cancel</a>
               </div>
@@ -121,3 +117,45 @@
     </div>
   </div>
 </section>
+
+<script>
+  (function() {
+    const serviceSelect = document.getElementById('serviceId');
+    const branchSelect = document.getElementById('branchId');
+    const servicesByBranch = <%- JSON.stringify(branchServices || {}) %>;
+    const preselectedBranch = '<%= appointment ? appointment.branchId : '' %>';
+    const preselectedService = '<%= appointment ? appointment.serviceId : '' %>';
+
+    function renderServices(branchId) {
+      while (serviceSelect.firstChild) {
+        serviceSelect.removeChild(serviceSelect.firstChild);
+      }
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = 'Choose a service...';
+      serviceSelect.appendChild(placeholder);
+
+      const list = servicesByBranch[branchId] || [];
+      list.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.serviceId;
+        opt.textContent = s.serviceName;
+        serviceSelect.appendChild(opt);
+      });
+      if (preselectedService) {
+        serviceSelect.value = preselectedService;
+      }
+    }
+
+    if (branchSelect) {
+      branchSelect.addEventListener('change', function() {
+        renderServices(this.value);
+      });
+      const initialBranch = preselectedBranch || (branchSelect.options.length > 1 ? branchSelect.options[1].value : '');
+      if (initialBranch) {
+        branchSelect.value = initialBranch;
+        renderServices(initialBranch);
+      }
+    }
+  })();
+</script>

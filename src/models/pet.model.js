@@ -84,3 +84,21 @@ export async function getByCustomerId(customerId) {
         )
         .where('PET.CUSTOMER_ID', customerId);
 }
+
+// Create pet using stored procedure
+export async function createForCustomer({ customerId, breedId, name, gender, birthdate = null, healthStatus = 'Khỏe mạnh' }) {
+    const result = await db.raw(`
+    DECLARE @NewId INT;
+    EXEC dbo.uspPetCreateForCustomer
+      @CustomerId = ?,
+      @PetName = ?,
+      @PetBreedId = ?,
+      @PetGender = ?,
+      @PetBirthdate = ?,
+      @PetHealthStatus = ?,
+      @PetId = @NewId OUTPUT;
+    SELECT @NewId AS id;
+  `, [customerId, name, breedId, gender, birthdate, healthStatus]);
+
+    return result[0]?.id || null;
+}

@@ -32,6 +32,22 @@ function renderCustomerPage(res, view, options = {}) {
   });
 }
 
+function mapServices(services) {
+  return (services || []).map(s => ({
+    serviceId: s.id || s.serviceId,
+    serviceName: s.name || s.serviceName,
+    price: s.fee || s.price || 0,
+  }));
+}
+
+function mapBranches(branches) {
+  return (branches || []).map(b => ({
+    branchId: b.id || b.branchId,
+    branchName: b.name || b.branchName,
+    address: b.address || '',
+  }));
+}
+
 // Redirect base to dashboard for convenience
 router.get('/', requireCustomer, (_req, res) => {
   res.redirect(`${basePath}/dashboard`);
@@ -74,7 +90,7 @@ router.get('/dashboard', requireCustomer, async (req, res) => {
         appointmentId: a.id,
         serviceName: a.serviceName,
         appointmentDate: a.date,
-        appointmentTime: '',
+        appointmentTime: a.date ? new Date(a.date).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '',
         branchName: a.branchName,
         petName: '',
         status: a.status,
@@ -120,7 +136,7 @@ router.get('/appointments', requireCustomer, async (req, res) => {
         serviceName: a.serviceName,
         status: a.status || 'Unknown',
         appointmentDate: a.date,
-        appointmentTime: '',
+        appointmentTime: a.date ? new Date(a.date).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '',
         branchName: a.branchName,
         petName: '',
         notes: '',
@@ -137,7 +153,7 @@ router.get('/appointments', requireCustomer, async (req, res) => {
         serviceName: c.symptoms || 'Check-up',
         status: c.status || 'Unknown',
         appointmentDate: c.date,
-        appointmentTime: '',
+        appointmentTime: c.date ? new Date(c.date).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '',
         branchName: c.branchName || '',
         petName: c.petName,
         notes: c.diagnosis || '',
@@ -169,14 +185,17 @@ router.get('/appointments/new', requireCustomer, async (req, res) => {
   try {
     const customerId = req.session.customer?.id;
     const pets = await petModel.getByCustomerId(customerId);
-    const services = await checkupModel.getMedicalServices();
-    const branches = await reportModel.getBranches();
+    const branches = mapBranches(await reportModel.getBranches());
+    const branchServices = await appointmentModel.getServicesByBranch();
+    const initialBranchId = branches[0]?.branchId;
+    const services = initialBranchId ? (branchServices[initialBranchId] || []) : [];
 
     renderCustomerPage(res, 'customer/appointment-new', {
       title: 'New Appointment',
       pets,
       services,
       branches,
+      branchServices,
     });
   } catch (err) {
     console.error('Guest appointment-new error:', err);
@@ -185,9 +204,137 @@ router.get('/appointments/new', requireCustomer, async (req, res) => {
       pets: [],
       services: [],
       branches: [],
+      branchServices: {},
       error: 'Unable to load form data',
     });
   }
+});
+
+// Create appointment
+router.post('/appointments', requireCustomer, async (req, res) => {
+  const customerId = req.session.customer?.id;
+  const { branchId, serviceId, appointmentDate, appointmentTime, notes } = req.body;
+
+  try {
+    if (!branchId || !serviceId || !appointmentDate || !appointmentTime) {
+      throw new Error('Missing required fields');
+    }
+
+    const available = await appointmentModel.isBranchServiceAvailable({ branchId, serviceId });
+    if (!available) {
+      throw new Error('Selected service is not available at this branch. Please choose another branch/service.');
+    }
+
+    const dateTimeString = `${appointmentDate}T${appointmentTime}:00`;
+    const apptDate = new Date(dateTimeString);
+
+    await appointmentModel.create({
+      customerId,
+      branchId,
+      serviceId,
+      appointmentDate: apptDate,
+      status: 'Pending',
+    });
+
+    res.redirect('/guest/customer/appointments');
+  } catch (err) {
+    console.error('Create appointment error:', err);
+    const pets = await petModel.getByCustomerId(customerId);
+    const branches = mapBranches(await reportModel.getBranches());
+    const branchServices = await appointmentModel.getServicesByBranch();
+    const services = [];
+    renderCustomerPage(res, 'customer/appointment-new', {
+      title: 'New Appointment',
+      pets,
+      services,
+      branches,
+      branchServices,
+      error: err.message || 'Unable to create appointment',
+    });
+  }
+});
+
+// Edit appointment
+router.get('/appointments/:id/edit', requireCustomer, async (req, res) => {
+  try {
+    const customerId = req.session.customer?.id;
+    const appt = await appointmentModel.getByIdForCustomer({ appointmentId: req.params.id, customerId });
+    if (!appt) return res.redirect('/guest/customer/appointments');
+
+    const pets = await petModel.getByCustomerId(customerId);
+    const branches = mapBranches(await reportModel.getBranches());
+    const branchServices = await appointmentModel.getServicesByBranch();
+    const services = branchServices[appt.branchId] || [];
+
+    renderCustomerPage(res, 'customer/appointment-new', {
+      title: 'Edit Appointment',
+      pets,
+      branches,
+      services,
+      branchServices,
+      appointment: appt,
+    });
+  } catch (err) {
+    console.error('Guest appointment-edit error:', err);
+    res.redirect('/guest/customer/appointments');
+  }
+});
+
+// Update appointment
+router.post('/appointments/:id', requireCustomer, async (req, res) => {
+  const customerId = req.session.customer?.id;
+  const { branchId, serviceId, appointmentDate, appointmentTime, status } = req.body;
+  const appointmentId = req.params.id;
+
+  try {
+    if (!branchId || !serviceId || !appointmentDate || !appointmentTime) {
+      throw new Error('Missing required fields');
+    }
+
+    const available = await appointmentModel.isBranchServiceAvailable({ branchId, serviceId });
+    if (!available) {
+      throw new Error('Selected service is not available at this branch. Please choose another branch/service.');
+    }
+
+    const dateTimeString = `${appointmentDate}T${appointmentTime}:00`;
+    const apptDate = new Date(dateTimeString);
+
+    await appointmentModel.update({
+      appointmentId,
+      customerId,
+      branchId,
+      serviceId,
+      appointmentDate: apptDate,
+      status: status || 'Pending',
+    });
+
+    res.redirect('/guest/customer/appointments');
+  } catch (err) {
+    console.error('Update appointment error:', err);
+    const pets = await petModel.getByCustomerId(customerId);
+    const branches = mapBranches(await reportModel.getBranches());
+    const branchServices = await appointmentModel.getServicesByBranch();
+    const services = branchServices[branchId] || [];
+    renderCustomerPage(res, 'customer/appointment-new', {
+      title: 'Edit Appointment',
+      pets,
+      services,
+      branches,
+      branchServices,
+      error: err.message || 'Unable to update appointment',
+    });
+  }
+});
+
+// Cancel appointment
+router.post('/appointments/:id/cancel', requireCustomer, async (req, res) => {
+  const customerId = req.session.customer?.id;
+  try {
+    await appointmentModel.cancel({ appointmentId: req.params.id, customerId });
+  } catch (err) {
+    console.error('Cancel appointment error:', err);
+  }
+  res.redirect('/guest/customer/appointments');
 });
 
 router.get('/pets', requireCustomer, async (req, res) => {
@@ -222,6 +369,49 @@ router.get('/receipts', requireCustomer, async (req, res) => {
       title: 'Receipts',
       receipts: [],
       error: 'Unable to load receipts',
+    });
+  }
+});
+
+// Add pet
+router.get('/pets/add', requireCustomer, async (req, res) => {
+  try {
+    const breeds = await petModel.getBreeds();
+    renderCustomerPage(res, 'customer/pet-add', {
+      title: 'Add Pet',
+      breeds,
+    });
+  } catch (err) {
+    console.error('Guest pet-add error:', err);
+    renderCustomerPage(res, 'customer/pet-add', {
+      title: 'Add Pet',
+      breeds: [],
+      error: 'Unable to load breeds',
+    });
+  }
+});
+
+router.post('/pets/add', requireCustomer, async (req, res) => {
+  const customerId = req.session.customer?.id;
+  const { name, breedId, gender, birthdate, healthStatus } = req.body;
+  try {
+    if (!name || !breedId || !gender) throw new Error('Missing required fields');
+    await petModel.createForCustomer({
+      customerId,
+      breedId,
+      name,
+      gender,
+      birthdate: birthdate || null,
+      healthStatus: healthStatus || 'Khỏe mạnh',
+    });
+    res.redirect('/guest/customer/pets');
+  } catch (err) {
+    console.error('Create pet error:', err);
+    const breeds = await petModel.getBreeds();
+    renderCustomerPage(res, 'customer/pet-add', {
+      title: 'Add Pet',
+      breeds,
+      error: err.message || 'Unable to add pet',
     });
   }
 });
