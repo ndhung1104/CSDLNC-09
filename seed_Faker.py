@@ -479,6 +479,12 @@ if __name__ == "__main__":
         existing = cursor.fetchone()[0]
         insert_pets()
 
+        # if existing == 0:
+        #     insert_pets()
+        # else:
+        #     print(f"Already have {existing:,} pets, skipping.")
+
+
         # 3. CHECK_UP
         cursor.execute("SELECT COUNT(*) FROM CHECK_UP")
         existing = cursor.fetchone()[0]
