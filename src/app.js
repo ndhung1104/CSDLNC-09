@@ -12,6 +12,9 @@ import receiptsRoutes from './routes/receipts.route.js';
 import vaccinationRoutes from './routes/vaccination.route.js';
 import productsRoutes from './routes/products.route.js';
 import reportsRoutes from './routes/reports.route.js';
+import guestCustomerRoutes from './routes/guest-customer.route.js';
+import customerPortalRoutes from './routes/customer.route.js';
+import managementRoutes from './routes/management.route.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -45,6 +48,9 @@ app.use('/receipts', receiptsRoutes);
 app.use('/vaccination-plans', vaccinationRoutes);
 app.use('/products', productsRoutes);
 app.use('/reports', reportsRoutes);
+app.use('/customer', customerPortalRoutes);
+app.use('/management', managementRoutes);
+app.use('/guest/customer', guestCustomerRoutes);
 app.use('/api', (await import('./routes/api.route.js')).default);
 
 app.use((err, req, res, _next) => {

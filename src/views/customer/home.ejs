@@ -1,10 +1,11 @@
+<% const bp = typeof basePath !== 'undefined' ? basePath : '/customer'; %>
 <section class="customer-hero">
   <div class="container">
     <h1 class="display-4 fw-bold mb-3">Welcome to PETCAREX</h1>
     <p class="lead mb-4">Professional pet care services for your beloved companions</p>
     <div class="d-flex gap-3 justify-content-center">
-      <a href="/customer/register" class="btn btn-light btn-lg">Get Started</a>
-      <a href="/customer/login" class="btn btn-outline-light btn-lg">Login</a>
+      <a href="<%= bp %>/register" class="btn btn-light btn-lg">Get Started</a>
+      <a href="<%= bp %>/login" class="btn btn-outline-light btn-lg">Login</a>
     </div>
   </div>
 </section>

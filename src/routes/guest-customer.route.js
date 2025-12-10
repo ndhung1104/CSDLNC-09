@@ -1,18 +1,21 @@
 import { Router } from 'express';
-import {
+import * as demoData from '../services/demoData.service.js';
+
+const {
   getCustomerDashboardData,
   getCustomerAppointmentsData,
   getCustomerNewAppointmentData,
   getCustomerPetsData,
   getCustomerReceiptsData,
-} from '../services/demoData.service.js';
+} = demoData;
 
-const basePath = '/customer';
+const basePath = '/guest/customer';
+
 const router = Router();
 
 function renderCustomerPage(res, view, options = {}) {
   const layout = 'layouts/layout-customer';
-  const merged = { basePath, showManagementLink: true, ...options };
+  const merged = { basePath, showManagementLink: false, ...options };
   res.render(view, merged, (err, content) => {
     if (err) return res.status(500).send(err.message);
     res.render(layout, { ...merged, body: content }, (layoutErr, html) => {
@@ -22,7 +25,12 @@ function renderCustomerPage(res, view, options = {}) {
   });
 }
 
+// Redirect base to dashboard for convenience
 router.get('/', (_req, res) => {
+  res.redirect(`${basePath}/dashboard`);
+});
+
+router.get('/home', (_req, res) => {
   renderCustomerPage(res, 'customer/home', {
     title: 'Home',
     user: null,

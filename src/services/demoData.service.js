@@ -1,10 +1,10 @@
-const demoUser = {
+export const demoUser = {
   initials: 'JD',
   name: 'Jane Doe',
   email: 'jane@petcarex.com',
 };
 
-function getCustomerDashboardData() {
+export function getCustomerDashboardData() {
   return {
     user: demoUser,
     customer: {
@@ -57,7 +57,7 @@ function getCustomerDashboardData() {
   };
 }
 
-function getCustomerAppointmentsData() {
+export function getCustomerAppointmentsData() {
   return {
     user: demoUser,
     upcomingAppointments: [
@@ -86,7 +86,7 @@ function getCustomerAppointmentsData() {
   };
 }
 
-function getCustomerNewAppointmentData() {
+export function getCustomerNewAppointmentData() {
   return {
     user: demoUser,
     pets: [
@@ -115,7 +115,7 @@ function getCustomerNewAppointmentData() {
   };
 }
 
-function getCustomerPetsData() {
+export function getCustomerPetsData() {
   return {
     user: demoUser,
     pets: [
@@ -143,7 +143,7 @@ function getCustomerPetsData() {
   };
 }
 
-function getCustomerReceiptsData() {
+export function getCustomerReceiptsData() {
   return {
     user: demoUser,
     receipts: [
@@ -163,39 +163,7 @@ function getCustomerReceiptsData() {
   };
 }
 
-function getManagementDashboardData() {
-  return {
-    user: demoUser,
-    stats: {
-      totalCustomers: 1280,
-      totalPets: 2310,
-      appointmentsToday: 24,
-      revenueMonth: 45120,
-    },
-    upcomingAppointments: [
-      {
-        appointmentDate: '2025-12-05',
-        appointmentTime: '09:00 AM',
-        customerName: 'Alex Johnson',
-        petName: 'Rocky',
-        serviceName: 'Vaccination',
-        branchName: 'Downtown Clinic',
-        status: 'Pending',
-      },
-      {
-        appointmentDate: '2025-12-05',
-        appointmentTime: '10:00 AM',
-        customerName: 'Maria Chen',
-        petName: 'Snow',
-        serviceName: 'Grooming',
-        branchName: 'Uptown Clinic',
-        status: 'Confirmed',
-      },
-    ],
-  };
-}
-
-function getManagementCustomersData() {
+export function getManagementCustomersData() {
   return {
     user: demoUser,
     customers: [
@@ -212,7 +180,7 @@ function getManagementCustomersData() {
       {
         customerId: 2,
         customerName: 'Maria Chen',
-        gender: 'Nữ',
+        gender: 'N Ż_',
         phone: '0987654321',
         email: 'maria@example.com',
         membershipRank: 'Platinum',
@@ -232,14 +200,3 @@ function getManagementCustomersData() {
     },
   };
 }
-
-module.exports = {
-  demoUser,
-  getCustomerDashboardData,
-  getCustomerAppointmentsData,
-  getCustomerNewAppointmentData,
-  getCustomerPetsData,
-  getCustomerReceiptsData,
-  getManagementDashboardData,
-  getManagementCustomersData,
-};

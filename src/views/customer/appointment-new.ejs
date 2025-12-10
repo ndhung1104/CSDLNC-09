@@ -1,3 +1,4 @@
+<% const bp = typeof basePath !== 'undefined' ? basePath : '/customer'; %>
 <section class="py-4 bg-light">
   <div class="container">
     <h2 class="mb-0">Book an Appointment</h2>
@@ -11,7 +12,7 @@
       <div class="col-lg-8">
         <div class="customer-card card">
           <div class="card-body p-4">
-            <form action="/customer/appointments" method="POST" id="appointmentForm">
+            <form action="<%= bp %>/appointments" method="POST" id="appointmentForm">
               <div class="mb-4">
                 <h5 class="mb-3">1. Select Your Pet</h5>
                 <div class="row g-3">
@@ -111,7 +112,7 @@
                   <i class="bi bi-check-circle me-2"></i>
                   Confirm Appointment
                 </button>
-                <a href="/customer/appointments" class="btn btn-outline-secondary btn-lg">Cancel</a>
+                <a href="<%= bp %>/appointments" class="btn btn-outline-secondary btn-lg">Cancel</a>
               </div>
             </form>
           </div>

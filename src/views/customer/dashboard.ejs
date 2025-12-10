@@ -1,3 +1,4 @@
+<% const bp = typeof basePath !== 'undefined' ? basePath : '/customer'; %>
 <section class="py-4 bg-light">
   <div class="container">
     <h2 class="mb-0">Welcome back, <%= typeof customer !== 'undefined' && customer ? customer.name : 'User' %>!</h2>
@@ -59,7 +60,7 @@
         <div class="customer-card card">
           <div class="card-header bg-white d-flex justify-content-between align-items-center">
             <h5 class="mb-0">My Pets</h5>
-            <a href="/customer/pets/add" class="btn btn-sm btn-primary">Add Pet</a>
+            <a href="<%= bp %>/pets/add" class="btn btn-sm btn-primary">Add Pet</a>
           </div>
           <div class="card-body">
             <% if (typeof pets !== 'undefined' && pets && pets.length > 0) { %>
@@ -75,7 +76,7 @@
                       <span class="badge bg-success-subtle text-success"><%= pet.healthStatus %></span>
                     </div>
                   </div>
-                  <a href="/customer/pets/<%= pet.petId %>" class="btn btn-sm btn-outline-primary">View</a>
+                  <a href="<%= bp %>/pets/<%= pet.petId %>" class="btn btn-sm btn-outline-primary">View</a>
                 </div>
               <% }); %>
             <% } else { %>
@@ -89,7 +90,7 @@
         <div class="customer-card card">
           <div class="card-header bg-white d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Upcoming Appointments</h5>
-            <a href="/customer/appointments/new" class="btn btn-sm btn-primary">Book Now</a>
+            <a href="<%= bp %>/appointments/new" class="btn btn-sm btn-primary">Book Now</a>
           </div>
           <div class="card-body">
             <% if (typeof upcomingAppointments !== 'undefined' && upcomingAppointments && upcomingAppointments.length > 0) { %>
@@ -115,7 +116,7 @@
                     <%= appointment.petName %>
                   </small>
                   <div class="mt-2">
-                    <a href="/customer/appointments/<%= appointment.appointmentId %>" class="btn btn-sm btn-outline-secondary">View Details</a>
+                    <a href="<%= bp %>/appointments/<%= appointment.appointmentId %>" class="btn btn-sm btn-outline-secondary">View Details</a>
                   </div>
                 </div>
               <% }); %>

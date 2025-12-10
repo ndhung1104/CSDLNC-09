@@ -1,19 +1,7 @@
-const express = require('express');
-const {
-  getManagementDashboardData,
-  getManagementCustomersData,
-} = require('../services/demoData.service');
+import { Router } from 'express';
+import { getManagementCustomersData } from '../services/demoData.service.js';
 
-const router = express.Router();
-
-router.get('/dashboard', (_req, res) => {
-  const data = getManagementDashboardData();
-  res.render('management/dashboard', {
-    title: 'Dashboard',
-    activePage: 'dashboard',
-    ...data,
-  });
-});
+const router = Router();
 
 router.get('/customers', (_req, res) => {
   const data = getManagementCustomersData();
@@ -24,4 +12,4 @@ router.get('/customers', (_req, res) => {
   });
 });
 
-module.exports = router;
+export default router;
