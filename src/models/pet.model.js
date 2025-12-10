@@ -72,6 +72,15 @@ export async function getBreeds() {
 export async function getByCustomerId(customerId) {
     return db('PET')
         .join('PET_BREED', 'PET.PET_BREED_ID', 'PET_BREED.BREED_ID')
-        .select('PET.*', 'PET_BREED.BREED_NAME as breedName', 'PET_BREED.TYPE_OF_PET as typeOfPet')
+        .select(
+            'PET.PET_ID as id',
+            'PET.PET_NAME as name',
+            'PET.PET_GENDER as gender',
+            'PET.PET_BIRTHDATE as birthdate',
+            'PET.PET_HEALTH_STATUS as healthStatus',
+            'PET_BREED.BREED_NAME as breedName',
+            'PET_BREED.TYPE_OF_PET as typeOfPet',
+            'PET.CUSTOMER_ID as customerId'
+        )
         .where('PET.CUSTOMER_ID', customerId);
 }

@@ -79,3 +79,48 @@ export async function complete(receiptId) {
 export async function getBranches() {
     return db.raw('SELECT BRANCH_ID as id, BRANCH_NAME as name FROM BRANCH');
 }
+
+// Get receipts for a specific customer with details
+export async function getByCustomerId(customerId) {
+    const receipts = await db('RECEIPT as r')
+        .leftJoin('BRANCH as b', 'r.BRANCH_ID', 'b.BRANCH_ID')
+        .select(
+            'r.RECEIPT_ID as id',
+            'r.RECEIPT_STATUS as status',
+            'r.RECEIPT_TOTAL_PRICE as total',
+            'r.RECEIPT_CREATED_DATE as date',
+            'b.BRANCH_NAME as branchName',
+            'r.RECEIPT_PAYMENT_METHOD as paymentMethod'
+        )
+        .where('r.CUSTOMER_ID', customerId)
+        .orderBy('r.RECEIPT_CREATED_DATE', 'desc');
+
+    if (receipts.length === 0) return [];
+
+    const receiptIds = receipts.map(r => r.id);
+    const details = await db('RECEIPT_DETAIL as rd')
+        .join('PRODUCT as p', 'rd.PRODUCT_ID', 'p.PRODUCT_ID')
+        .select(
+            'rd.RECEIPT_ID as receiptId',
+            'p.PRODUCT_NAME as productName',
+            'rd.RECEIPT_ITEM_AMOUNT as quantity',
+            'rd.RECEIPT_ITEM_PRICE as price'
+        )
+        .whereIn('rd.RECEIPT_ID', receiptIds);
+
+    const detailMap = {};
+    details.forEach(d => {
+        if (!detailMap[d.receiptId]) detailMap[d.receiptId] = [];
+        detailMap[d.receiptId].push({
+            itemName: d.productName,
+            quantity: d.quantity,
+            totalPrice: d.price * d.quantity
+        });
+    });
+
+    receipts.forEach(r => {
+        r.items = detailMap[r.id] || [];
+    });
+
+    return receipts;
+}

@@ -112,3 +112,20 @@ export async function findByLogin(login) {
         .orWhere('CUSTOMER_PHONE', login)
         .first();
 }
+
+// Get customer profile with membership info (no pets)
+export async function getProfileById(id) {
+    return db('CUSTOMER')
+        .join('MEMBERSHIP_RANK', 'CUSTOMER.MEMBERSHIP_RANK_ID', 'MEMBERSHIP_RANK.MEMBERSHIP_RANK_ID')
+        .select(
+            'CUSTOMER.CUSTOMER_ID as id',
+            'CUSTOMER.CUSTOMER_NAME as name',
+            'CUSTOMER.CUSTOMER_EMAIL as email',
+            'CUSTOMER.CUSTOMER_PHONE as phone',
+            'CUSTOMER.CUSTOMER_LOYALTY as loyalty',
+            'MEMBERSHIP_RANK.MEMBERSHIP_RANK_ID as membershipRankId',
+            'MEMBERSHIP_RANK.MEMBERSHIP_RANK_NAME as membershipRank'
+        )
+        .where('CUSTOMER.CUSTOMER_ID', id)
+        .first();
+}

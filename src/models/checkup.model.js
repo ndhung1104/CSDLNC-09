@@ -82,3 +82,25 @@ export async function getMedicalServices() {
         JOIN PRODUCT p ON m.MEDICAL_SERVICE_ID = p.PRODUCT_ID
     `);
 }
+
+// Get checkups for a customer's pets
+export async function getByCustomerId(customerId) {
+    return db('CHECK_UP as c')
+        .join('PET as p', 'c.PET_ID', 'p.PET_ID')
+        .join('CUSTOMER as cu', 'p.CUSTOMER_ID', 'cu.CUSTOMER_ID')
+        .leftJoin('EMPLOYEE as e', 'c.VET_ID', 'e.EMPLOYEE_ID')
+        .select(
+            'c.CHECK_UP_ID as id',
+            'c.STATUS as status',
+            'c.SYMPTOMS as symptoms',
+            'c.DIAGNOSIS as diagnosis',
+            'c.FOLLOW_UP_VISIT as date',
+            'p.PET_NAME as petName',
+            'p.PET_ID as petId',
+            'cu.CUSTOMER_NAME as customerName',
+            'cu.CUSTOMER_ID as customerId',
+            'e.EMPLOYEE_NAME as vetName'
+        )
+        .where('cu.CUSTOMER_ID', customerId)
+        .orderBy('c.CHECK_UP_ID', 'desc');
+}
