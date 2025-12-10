@@ -96,7 +96,7 @@ export async function purchase({ productId, quantity, customerId, branchId, empl
             RECEIPT_CREATED_DATE: new Date(),
             RECEIPT_TOTAL_PRICE: totalPrice,
             RECEIPT_PAYMENT_METHOD: paymentMethod,
-            RECEIPT_STATUS: 'Đã thanh toán'
+            RECEIPT_STATUS: 'Đã hoàn thành'
         }).returning('RECEIPT_ID');
 
         const receiptId = receiptResult?.RECEIPT_ID || receiptResult;

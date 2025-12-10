@@ -26,6 +26,7 @@ services:
   db-init:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: petcarex-db-init
+    profiles: [ "seed" ]
     depends_on:
       mssql:
         condition: service_healthy
@@ -65,14 +66,15 @@ services:
       DB_PASSWORD: "PetCareX@2024"
       DB_NAME: PETCAREX
     depends_on:
-      db-init:
-        condition: service_completed_successfully
+      mssql:
+        condition: service_healthy
     networks:
       - petcarex-network
     restart: unless-stopped
 
 volumes:
   mssql_data:
+
 
 networks:
   petcarex-network:
