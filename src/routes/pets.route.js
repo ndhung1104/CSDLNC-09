@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { requireRole } from '../middleware/auth.middleware.js';
+import { requireRole, requireAnyEmployee } from '../middleware/auth.middleware.js';
 import * as petModel from '../models/pet.model.js';
 
 const router = Router();
 
 // List pets
-router.get('/', requireRole('RECEP', 'VET', 'MGR', 'DIRECTOR', 'SALES'), async (req, res) => {
+router.get('/', requireAnyEmployee(), async (req, res) => {
     const { search = '', searchBy = 'pet', page = 1 } = req.query;
     try {
         const { pets, total, limit } = await petModel.getAll({ search, searchBy, page: parseInt(page) });
@@ -21,7 +21,7 @@ router.get('/', requireRole('RECEP', 'VET', 'MGR', 'DIRECTOR', 'SALES'), async (
 });
 
 // Create pet form
-router.get('/create', requireRole('RECEP', 'MGR', 'DIRECTOR'), async (req, res) => {
+router.get('/create', requireAnyEmployee(), async (req, res) => {
     const breeds = await petModel.getBreeds();
     res.render('pets/create', {
         title: 'Thêm thú cưng', breeds,
@@ -31,7 +31,7 @@ router.get('/create', requireRole('RECEP', 'MGR', 'DIRECTOR'), async (req, res) 
 });
 
 // Create pet - Use Case 1
-router.post('/create', requireRole('RECEP', 'MGR', 'DIRECTOR'), async (req, res) => {
+router.post('/create', requireAnyEmployee(), async (req, res) => {
     const { customerId, breedId, name, gender, weight } = req.body;
     try {
         await petModel.create({ customerId, breedId, name, gender, weight });
@@ -44,7 +44,7 @@ router.post('/create', requireRole('RECEP', 'MGR', 'DIRECTOR'), async (req, res)
 });
 
 // View pet detail
-router.get('/:id', requireRole('RECEP', 'VET', 'MGR', 'DIRECTOR', 'SALES'), async (req, res) => {
+router.get('/:id', requireAnyEmployee(), async (req, res) => {
     try {
         const pet = await petModel.getById(req.params.id);
         if (!pet) return res.redirect('/pets');

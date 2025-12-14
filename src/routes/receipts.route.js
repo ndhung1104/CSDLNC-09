@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import { requireRole } from '../middleware/auth.middleware.js';
+import { requireRole, requireAnyEmployee } from '../middleware/auth.middleware.js';
 import * as receiptModel from '../models/receipt.model.js';
 import * as customerModel from '../models/customer.model.js';
 
 const router = Router();
 
 // List receipts
-router.get('/', requireRole('RECEP', 'SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
+router.get('/', requireAnyEmployee(), async (req, res) => {
     const emp = req.session.employee;
     const { status, page = 1 } = req.query;
     try {
@@ -21,7 +21,7 @@ router.get('/', requireRole('RECEP', 'SALES', 'MGR', 'DIRECTOR'), async (req, re
 });
 
 // Create receipt form - with customer dropdown
-router.get('/create', requireRole('RECEP', 'SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
+router.get('/create', requireAnyEmployee(), async (req, res) => {
     // Render create page without pre-loading customers (use AJAX Autocomplete)
     res.render('receipts/create', {
         title: 'Tạo hóa đơn',
@@ -31,7 +31,7 @@ router.get('/create', requireRole('RECEP', 'SALES', 'MGR', 'DIRECTOR'), async (r
 });
 
 // Create draft receipt - Use Case 2
-router.post('/create', requireRole('RECEP', 'SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
+router.post('/create', requireAnyEmployee(), async (req, res) => {
     const { customerId } = req.body;
     const emp = req.session.employee;
     try {
@@ -44,7 +44,7 @@ router.post('/create', requireRole('RECEP', 'SALES', 'MGR', 'DIRECTOR'), async (
 });
 
 // View receipt
-router.get('/:id', requireRole('RECEP', 'SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
+router.get('/:id', requireAnyEmployee(), async (req, res) => {
     try {
         const receipt = await receiptModel.getById(req.params.id);
         if (!receipt) return res.redirect('/receipts');
@@ -55,7 +55,7 @@ router.get('/:id', requireRole('RECEP', 'SALES', 'MGR', 'DIRECTOR'), async (req,
 });
 
 // Complete receipt - Use Case 2 (payment and loyalty points)
-router.post('/:id/complete', requireRole('RECEP', 'SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
+router.post('/:id/complete', requireAnyEmployee(), async (req, res) => {
     try {
         await receiptModel.complete(req.params.id);
         res.redirect(`/receipts/${req.params.id}?success=Thanh+toán+thành+công`);

@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import { requireRole } from '../middleware/auth.middleware.js';
+import { requireRole, requireAnyEmployee } from '../middleware/auth.middleware.js';
 import * as vaccinationModel from '../models/vaccination.model.js';
 import * as petModel from '../models/pet.model.js';
 
 const router = Router();
 
 // List vaccination plans
-router.get('/', requireRole('SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
+router.get('/', requireAnyEmployee(), async (req, res) => {
     const { page = 1 } = req.query;
     try {
         const { plans, total, limit } = await vaccinationModel.getAll({ page: parseInt(page) });
@@ -19,7 +19,7 @@ router.get('/', requireRole('SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
 });
 
 // View plan detail
-router.get('/:id', requireRole('SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
+router.get('/:id', requireAnyEmployee(), async (req, res) => {
     try {
         const plan = await vaccinationModel.getById(req.params.id);
         if (!plan) return res.redirect('/vaccination-plans');
@@ -30,7 +30,7 @@ router.get('/:id', requireRole('SALES', 'MGR', 'DIRECTOR'), async (req, res) => 
 });
 
 // Purchase vaccination plan form - with pet dropdown
-router.get('/:id/purchase', requireRole('SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
+router.get('/:id/purchase', requireAnyEmployee(), async (req, res) => {
     try {
         const plan = await vaccinationModel.getById(req.params.id);
         if (!plan) return res.redirect('/vaccination-plans');
@@ -50,7 +50,7 @@ router.get('/:id/purchase', requireRole('SALES', 'MGR', 'DIRECTOR'), async (req,
 });
 
 // Purchase vaccination plan - Use Case 3
-router.post('/:id/purchase', requireRole('SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
+router.post('/:id/purchase', requireAnyEmployee(), async (req, res) => {
     const { petId } = req.body;
     const emp = req.session.employee;
     try {

@@ -9,69 +9,61 @@
 
             <% const pos=typeof employee !=='undefined' ? employee.position : '' ; %>
 
-                <!-- SALES/MGR/DIRECTOR -->
-                <% if (['SALES', 'MGR' , 'DIRECTOR' ].includes(pos)) { %>
-                    <li class="nav-item">
-                        <a class="nav-link <%= title.includes('Sản phẩm') || title.includes('Mua') ? 'active' : '' %>"
-                            href="/products">
-                            <i class="bi bi-box-seam me-3"></i> Sản phẩm
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link <%= title.includes('Gói tiêm phòng') ? 'active' : '' %>"
-                            href="/vaccination-plans">
-                            <i class="bi bi-shield-check me-3"></i> Gói tiêm phòng
-                        </a>
-                    </li>
-                    <% } %>
+                <!-- All employees can see all menu items -->
+                <li class="nav-item">
+                    <a class="nav-link <%= title === 'Khách hàng' ? 'active' : '' %>" href="/customers">
+                        <i class="bi bi-people me-3"></i> Khách hàng
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <%= title === 'Thú cưng' ? 'active' : '' %>" href="/pets">
+                        <i class="bi bi-heart me-3"></i> Thú cưng
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <%= title.includes('Phiếu khám') ? 'active' : '' %>" href="/checkups">
+                        <i class="bi bi-clipboard2-pulse me-3"></i> Phiếu khám
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <%= title.includes('Hóa đơn') ? 'active' : '' %>" href="/receipts">
+                        <i class="bi bi-receipt me-3"></i> Hóa đơn
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <%= title.includes('Sản phẩm') || title.includes('Mua') ? 'active' : '' %>"
+                        href="/products">
+                        <i class="bi bi-box-seam me-3"></i> Sản phẩm
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <%= title.includes('Gói tiêm phòng') ? 'active' : '' %>"
+                        href="/vaccination-plans">
+                        <i class="bi bi-shield-check me-3"></i> Gói tiêm phòng
+                    </a>
+                </li>
 
-                        <!-- RECEP/SALES/MGR/DIRECTOR/VET -->
-                        <% if (['RECEP', 'SALES' , 'MGR' , 'DIRECTOR' , 'VET' ].includes(pos)) { %>
-                            <li class="nav-item">
-                                <a class="nav-link <%= title === 'Khách hàng' ? 'active' : '' %>" href="/customers">
-                                    <i class="bi bi-people me-3"></i> Khách hàng
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link <%= title === 'Thú cưng' ? 'active' : '' %>" href="/pets">
-                                    <i class="bi bi-heart me-3"></i> Thú cưng
-                                </a>
-                            </li>
+                <!-- MGR/DIRECTOR only - Reports -->
+                <% if (['MGR', 'DIRECTOR' ].includes(pos)) { %>
+                    <li class="nav-item mt-3">
+                        <span class="text-uppercase text-muted fw-bold px-3 small">Báo cáo</span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <%= title.includes('Báo cáo cuối ngày') ? 'active' : '' %>"
+                            href="/reports/daily">
+                            <i class="bi bi-graph-up me-3"></i> Báo cáo ngày
+                        </a>
+                    </li>
+                    <!-- DIRECTOR only - Membership Review -->
+                    <% if (pos==='DIRECTOR' ) { %>
+                        <li class="nav-item">
+                            <a class="nav-link <%= title.includes('Xét hạng') ? 'active' : '' %>"
+                                href="/reports/membership-review">
+                                <i class="bi bi-award me-3"></i> Xét hạng hội viên
+                            </a>
+                        </li>
+                        <% } %>
                             <% } %>
-
-                                <!-- RECEP/VET/MGR/DIRECTOR -->
-                                <% if (['RECEP', 'VET' , 'MGR' , 'DIRECTOR' ].includes(pos)) { %>
-                                    <li class="nav-item">
-                                        <a class="nav-link <%= title.includes('Phiếu khám') ? 'active' : '' %>"
-                                            href="/checkups">
-                                            <i class="bi bi-clipboard2-pulse me-3"></i> Phiếu khám
-                                        </a>
-                                    </li>
-                                    <% } %>
-
-                                        <!-- RECEP/SALES/MGR/DIRECTOR -->
-                                        <% if (['RECEP', 'SALES' , 'MGR' , 'DIRECTOR' ].includes(pos)) { %>
-                                            <li class="nav-item">
-                                                <a class="nav-link <%= title.includes('Hóa đơn') ? 'active' : '' %>"
-                                                    href="/receipts">
-                                                    <i class="bi bi-receipt me-3"></i> Hóa đơn
-                                                </a>
-                                            </li>
-                                            <% } %>
-
-                                                <!-- MGR/DIRECTOR -->
-                                                <% if (['MGR', 'DIRECTOR' ].includes(pos)) { %>
-                                                    <li class="nav-item mt-3">
-                                                        <span class="text-uppercase text-muted fw-bold px-3 small">Báo
-                                                            cáo</span>
-                                                    </li>
-                                                    <li class="nav-item">
-                                                        <a class="nav-link <%= title.includes('Báo cáo') ? 'active' : '' %>"
-                                                            href="/reports/daily">
-                                                            <i class="bi bi-graph-up me-3"></i> Báo cáo ngày
-                                                        </a>
-                                                    </li>
-                                                    <% } %>
         </ul>
     </div>
     <div class="mt-auto p-3 text-muted small border-top border-secondary">

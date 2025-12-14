@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import { requireRole } from '../middleware/auth.middleware.js';
+import { requireRole, requireAnyEmployee } from '../middleware/auth.middleware.js';
 import * as checkupModel from '../models/checkup.model.js';
 import * as petModel from '../models/pet.model.js';
 
 const router = Router();
 
 // List checkups
-router.get('/', requireRole('RECEP', 'VET', 'MGR', 'DIRECTOR'), async (req, res) => {
+router.get('/', requireAnyEmployee(), async (req, res) => {
     const emp = req.session.employee;
     const { status, page = 1 } = req.query;
     const vetId = emp.position === 'VET' ? emp.id : null;
@@ -31,7 +31,7 @@ router.get('/', requireRole('RECEP', 'VET', 'MGR', 'DIRECTOR'), async (req, res)
 });
 
 // Create checkup form - show pet and vet dropdowns
-router.get('/create', requireRole('RECEP', 'VET', 'MGR', 'DIRECTOR'), async (req, res) => {
+router.get('/create', requireAnyEmployee(), async (req, res) => {
     const emp = req.session.employee;
     const vets = await checkupModel.getVets(emp.branchId);
     const medicalServices = await checkupModel.getMedicalServices();
@@ -44,7 +44,7 @@ router.get('/create', requireRole('RECEP', 'VET', 'MGR', 'DIRECTOR'), async (req
 });
 
 // Create checkup
-router.post('/create', requireRole('RECEP', 'VET', 'MGR', 'DIRECTOR'), async (req, res) => {
+router.post('/create', requireAnyEmployee(), async (req, res) => {
     const { petId, vetId, medicalServiceId } = req.body;
     const emp = req.session.employee;
     try {
@@ -59,7 +59,7 @@ router.post('/create', requireRole('RECEP', 'VET', 'MGR', 'DIRECTOR'), async (re
 });
 
 // View/Edit checkup
-router.get('/:id', requireRole('RECEP', 'VET', 'MGR', 'DIRECTOR'), async (req, res) => {
+router.get('/:id', requireAnyEmployee(), async (req, res) => {
     try {
         const checkup = await checkupModel.getById(req.params.id);
         if (!checkup) return res.redirect('/checkups');
@@ -70,7 +70,7 @@ router.get('/:id', requireRole('RECEP', 'VET', 'MGR', 'DIRECTOR'), async (req, r
 });
 
 // Update checkup notes - Use Case 2
-router.post('/:id/update', requireRole('VET', 'MGR', 'DIRECTOR'), async (req, res) => {
+router.post('/:id/update', requireAnyEmployee(), async (req, res) => {
     const { symptoms, diagnosis, status } = req.body;
     try {
         await checkupModel.updateNotes({ checkupId: req.params.id, symptoms, diagnosis, status });

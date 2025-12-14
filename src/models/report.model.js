@@ -65,17 +65,61 @@ export async function runYearlyMembershipReview({ year }) {
             EXEC dbo.uspRunYearlyMembershipReview @Year = ?
         `, [year]);
 
-        const [upgrades, downgrades, maintained] = result;
-        return {
-            upgrades: upgrades || [],
-            downgrades: downgrades || [],
-            maintained: maintained || [],
-            summary: {
-                totalUpgrades: upgrades?.length || 0,
-                totalDowngrades: downgrades?.length || 0,
-                totalMaintained: maintained?.length || 0
-            }
-        };
+        console.log('=== MEMBERSHIP REVIEW DEBUG ===');
+        console.log('Result type:', typeof result);
+        console.log('Is Array:', Array.isArray(result));
+        console.log('Result length:', result?.length);
+        console.log('First few items:', JSON.stringify(result?.slice?.(0, 3)));
+        console.log('=== END DEBUG ===');
+
+        // The stored procedure returns 2 result sets but mssql driver flattens them
+        let summary = { totalUpgrades: 0, totalDowngrades: 0, totalMaintained: 0 };
+        let upgrades = [];
+        let downgrades = [];
+        let maintained = [];
+
+        // Handle as flat array - look for rows with CaseType property (detail rows)
+        if (Array.isArray(result)) {
+            result.forEach(row => {
+                // Summary rows have CaseType and CustomerCount
+                if (row && row.CaseType && row.CustomerCount !== undefined) {
+                    if (row.CaseType === 'UPGRADE') summary.totalUpgrades = row.CustomerCount;
+                    else if (row.CaseType === 'DOWNGRADE') summary.totalDowngrades = row.CustomerCount;
+                    else if (row.CaseType === 'KEEP') summary.totalMaintained = row.CustomerCount;
+                }
+                // Detail rows have CUSTOMER_ID and CaseType but no CustomerCount
+                else if (row && row.CUSTOMER_ID && row.CaseType) {
+                    const customer = {
+                        CUSTOMER_ID: row.CUSTOMER_ID,
+                        CUSTOMER_NAME: `Khách hàng #${row.CUSTOMER_ID}`,
+                        MEMBERSHIP_RANK_NAME: row.CurrentRankName,
+                        NewRank: row.NewRankName,
+                        MONEY_SPENT: row.MONEY_SPENT
+                    };
+                    if (row.CaseType === 'UPGRADE') upgrades.push(customer);
+                    else if (row.CaseType === 'DOWNGRADE') downgrades.push(customer);
+                    else if (row.CaseType === 'KEEP') maintained.push(customer);
+                }
+            });
+        }
+
+        // If summary wasn't parsed from result, compute from arrays
+        if (summary.totalUpgrades === 0 && summary.totalDowngrades === 0 && summary.totalMaintained === 0) {
+            summary = {
+                totalUpgrades: upgrades.length,
+                totalDowngrades: downgrades.length,
+                totalMaintained: maintained.length
+            };
+        }
+
+        console.log('=== PARSED RESULT ===');
+        console.log('Upgrades count:', upgrades.length);
+        console.log('Downgrades count:', downgrades.length);
+        console.log('Maintained count:', maintained.length);
+        console.log('Summary:', summary);
+        console.log('=== END ===');
+
+        return { upgrades, downgrades, maintained, summary };
     } catch (err) {
         console.error('MEMBERSHIP REVIEW ERROR:', err);
         return {

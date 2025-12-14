@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { requireRole } from '../middleware/auth.middleware.js';
+import { requireRole, requireAnyEmployee } from '../middleware/auth.middleware.js';
 import * as customerModel from '../models/customer.model.js';
 
 const router = Router();
 
 // List customers with search
-router.get('/', requireRole('RECEP', 'MGR', 'DIRECTOR', 'SALES', 'VET'), async (req, res) => {
+router.get('/', requireAnyEmployee(), async (req, res) => {
     const { search = '', page = 1, rankId = '' } = req.query;
     try {
         const ranks = await customerModel.getRanks();
@@ -26,12 +26,12 @@ router.get('/', requireRole('RECEP', 'MGR', 'DIRECTOR', 'SALES', 'VET'), async (
 });
 
 // Register form
-router.get('/register', requireRole('RECEP', 'MGR', 'DIRECTOR', 'SALES'), (req, res) => {
+router.get('/register', requireAnyEmployee(), (req, res) => {
     res.render('customers/register', { title: 'Đăng ký khách hàng', employee: req.session.employee, error: null });
 });
 
 // Register customer - Use Case 1
-router.post('/register', requireRole('RECEP', 'MGR', 'DIRECTOR', 'SALES'), async (req, res) => {
+router.post('/register', requireAnyEmployee(), async (req, res) => {
     const { name, phone, email, password, gender, birthdate } = req.body;
     try {
         const id = await customerModel.create({ name, phone, email, password, gender, birthdate });
@@ -43,7 +43,7 @@ router.post('/register', requireRole('RECEP', 'MGR', 'DIRECTOR', 'SALES'), async
 });
 
 // View customer detail
-router.get('/:id', requireRole('RECEP', 'MGR', 'DIRECTOR', 'SALES', 'VET'), async (req, res) => {
+router.get('/:id', requireAnyEmployee(), async (req, res) => {
     try {
         const customer = await customerModel.getById(req.params.id);
         if (!customer) return res.redirect('/customers');

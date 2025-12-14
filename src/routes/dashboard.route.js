@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import { requireRole } from '../middleware/auth.middleware.js';
+import { requireRole, requireAnyEmployee } from '../middleware/auth.middleware.js';
 import db from '../utils/db.js';
 
 const router = Router();
 
-router.get('/', requireRole('RECEP', 'VET', 'SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
+router.get('/', requireAnyEmployee(), async (req, res) => {
     const emp = req.session.employee;
     const stats = {};
     try {
