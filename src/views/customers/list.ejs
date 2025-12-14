@@ -89,9 +89,39 @@
                                                                     <td>
                                                                         <%= c.address %>
                                                                     </td>
-                                                                    <td><span class="badge bg-secondary">
-                                                                            <%= c.rank || 'N/A' %>
-                                                                        </span></td>
+                                                                    <td>
+                                                                        <% if (c.membershipRank) { %>
+                                                                            <% if (c.membershipRank.includes('VIP')) {
+                                                                                %>
+                                                                                <span class="badge"
+                                                                                    style="background: linear-gradient(135deg, #b9f2ff, #89CFF0, #A7D8DE, #E0FFFF); color: #1a3a4a;">
+                                                                                    <%= c.membershipRank %>
+                                                                                </span>
+                                                                                <% } else if
+                                                                                    (c.membershipRank.includes('Vàng'))
+                                                                                    { %>
+                                                                                    <span class="badge"
+                                                                                        style="background-color: #FFD700; color: #000;">
+                                                                                        <%= c.membershipRank %>
+                                                                                    </span>
+                                                                                    <% } else if
+                                                                                        (c.membershipRank.includes('Bạc'))
+                                                                                        { %>
+                                                                                        <span class="badge"
+                                                                                            style="background-color: #C0C0C0; color: #000;">
+                                                                                            <%= c.membershipRank %>
+                                                                                        </span>
+                                                                                        <% } else { %>
+                                                                                            <span class="badge"
+                                                                                                style="background-color: #CD7F32; color: #fff;">
+                                                                                                <%= c.membershipRank %>
+                                                                                            </span>
+                                                                                            <% } %>
+                                                                                                <% } else { %>
+                                                                                                    <span
+                                                                                                        class="badge bg-secondary">N/A</span>
+                                                                                                    <% } %>
+                                                                    </td>
                                                                     <td class="text-end pe-3">
                                                                         <a href="/customers/<%= c.id %>"
                                                                             class="btn btn-sm btn-outline-primary"><i

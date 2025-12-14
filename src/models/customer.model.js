@@ -64,7 +64,7 @@ export async function getById(id) {
     if (!customer) return null;
 
     const pets = await db('PET')
-        .join('PET_BREED', 'PET.BREED_ID', 'PET_BREED.BREED_ID')
+        .join('PET_BREED', 'PET.PET_BREED_ID', 'PET_BREED.BREED_ID')
         .select('PET.*', 'PET_BREED.BREED_NAME as breedName', 'PET_BREED.TYPE_OF_PET as typeOfPet')
         .where('PET.CUSTOMER_ID', id);
 
