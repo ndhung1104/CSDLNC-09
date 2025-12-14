@@ -1,14 +1,34 @@
 import db from '../utils/db.js';
 
-// Get all receipts (using raw SQL with TOP for reliability)
-export async function getAll({ branchId = null, status = null, page = 1, limit = 20 } = {}) {
+// Get all receipts - sorted by status (drafts first), then by date
+export async function getAll({ branchId = null, status = null, page = 1, limit = 20, sort = 'status' } = {}) {
+    const offset = (page - 1) * limit;
+
     // Count query
     const countResult = await db.raw('SELECT COUNT(*) as count FROM RECEIPT');
     const total = countResult[0]?.count || 0;
 
-    // Data query using raw SQL with TOP
+    // Build ORDER BY based on sort parameter
+    let orderBy = '';
+    switch (sort) {
+        case 'id':
+            orderBy = 'ORDER BY r.RECEIPT_ID DESC';
+            break;
+        case 'date':
+            orderBy = 'ORDER BY r.RECEIPT_CREATED_DATE DESC';
+            break;
+        case 'status':
+        default:
+            // Drafts first, then by date
+            orderBy = `ORDER BY 
+                CASE WHEN r.RECEIPT_STATUS = N'Chờ thanh toán' THEN 0 ELSE 1 END,
+                r.RECEIPT_CREATED_DATE DESC`;
+            break;
+    }
+
+    // Data query with proper pagination
     const receipts = await db.raw(`
-        SELECT TOP (${limit})
+        SELECT 
             r.RECEIPT_ID as id,
             r.RECEIPT_STATUS as status,
             r.RECEIPT_TOTAL_PRICE as total,
@@ -21,7 +41,8 @@ export async function getAll({ branchId = null, status = null, page = 1, limit =
         LEFT JOIN CUSTOMER c ON r.CUSTOMER_ID = c.CUSTOMER_ID
         LEFT JOIN BRANCH b ON r.BRANCH_ID = b.BRANCH_ID
         LEFT JOIN EMPLOYEE e ON r.RECEPTIONIST_ID = e.EMPLOYEE_ID
-        ORDER BY r.RECEIPT_CREATED_DATE DESC
+        ${orderBy}
+        OFFSET ${offset} ROWS FETCH NEXT ${limit} ROWS ONLY
     `);
 
     return { receipts, total, page, limit };
@@ -70,9 +91,112 @@ export async function createDraft({ customerId, branchId, employeeId, paymentMet
     return result[0]?.id || null;
 }
 
+// Add item to receipt (uses stored procedure for proper price calculation)
+export async function addItem({ receiptId, productId, quantity, petId = null, price = null }) {
+    // The stored procedure expects a table-valued parameter, but we'll use direct INSERT
+    // Get the max item ID for this receipt
+    const maxResult = await db.raw(`
+        SELECT ISNULL(MAX(RECEIPT_ITEM_ID), 0) as maxId FROM RECEIPT_DETAIL
+    `);
+    const nextItemId = (maxResult[0]?.maxId || 0) + 1;
+
+    // Get product price if not provided
+    let unitPrice = price;
+    if (!unitPrice) {
+        const priceResult = await db.raw(`
+            SELECT SALES_PRODUCT_PRICE as price FROM SALES_PRODUCT WHERE SALES_PRODUCT_ID = ?
+        `, [productId]);
+        unitPrice = priceResult[0]?.price || 0;
+    }
+
+    // Insert the item
+    await db.raw(`
+        INSERT INTO RECEIPT_DETAIL (RECEIPT_ITEM_ID, RECEIPT_ID, PRODUCT_ID, PET_ID, RECEIPT_ITEM_AMOUNT, RECEIPT_ITEM_PRICE)
+        VALUES (?, ?, ?, ?, ?, ?)
+    `, [nextItemId, receiptId, productId, petId, quantity, unitPrice]);
+
+    // Recalculate total
+    await db.raw(`
+        UPDATE RECEIPT
+        SET RECEIPT_TOTAL_PRICE = (
+            SELECT ISNULL(SUM(RECEIPT_ITEM_AMOUNT * RECEIPT_ITEM_PRICE), 0)
+            FROM RECEIPT_DETAIL WHERE RECEIPT_ID = ?
+        )
+        WHERE RECEIPT_ID = ?
+    `, [receiptId, receiptId]);
+
+    return nextItemId;
+}
+
+// Remove item from receipt
+export async function removeItem({ receiptId, itemId }) {
+    // Delete the item
+    await db.raw(`
+        DELETE FROM RECEIPT_DETAIL WHERE RECEIPT_ID = ? AND RECEIPT_ITEM_ID = ?
+    `, [receiptId, itemId]);
+
+    // Recalculate total
+    await db.raw(`
+        UPDATE RECEIPT
+        SET RECEIPT_TOTAL_PRICE = (
+            SELECT ISNULL(SUM(RECEIPT_ITEM_AMOUNT * RECEIPT_ITEM_PRICE), 0)
+            FROM RECEIPT_DETAIL WHERE RECEIPT_ID = ?
+        )
+        WHERE RECEIPT_ID = ?
+    `, [receiptId, receiptId]);
+}
+
 // Complete receipt and accumulate points using stored procedure
 export async function complete(receiptId) {
     await db.raw(`EXEC dbo.uspReceiptMarkCompletedAndAccumulate @ReceiptId = ?`, [receiptId]);
+}
+
+// Get products for item picker (sales products only)
+export async function getProducts({ search = '', branchId = null } = {}) {
+    let query = `
+        SELECT 
+            sp.SALES_PRODUCT_ID as id,
+            p.PRODUCT_NAME as name,
+            sp.SALES_PRODUCT_PRICE as price,
+            'product' as type
+        FROM SALES_PRODUCT sp
+        JOIN PRODUCT p ON sp.SALES_PRODUCT_ID = p.PRODUCT_ID
+    `;
+
+    if (search) {
+        query += ` WHERE p.PRODUCT_NAME LIKE '%${search}%'`;
+    }
+
+    query += ` ORDER BY p.PRODUCT_NAME`;
+
+    return db.raw(query);
+}
+
+// Get medical services for item picker
+export async function getServices() {
+    return db.raw(`
+        SELECT 
+            ms.MEDICAL_SERVICE_ID as id,
+            p.PRODUCT_NAME as name,
+            ms.MEDICAL_SERVICE_FEE as price,
+            'service' as type
+        FROM MEDICAL_SERVICE ms
+        JOIN PRODUCT p ON ms.MEDICAL_SERVICE_ID = p.PRODUCT_ID
+        ORDER BY p.PRODUCT_NAME
+    `);
+}
+
+// Get vaccines for item picker (vaccines don't have individual prices in the schema)
+export async function getVaccines() {
+    return db.raw(`
+        SELECT 
+            v.VACCINE_ID as id,
+            v.VACCINE_NAME as name,
+            0 as price,
+            'vaccine' as type
+        FROM VACCINE v
+        ORDER BY v.VACCINE_NAME
+    `);
 }
 
 // Get branches for dropdown
@@ -124,3 +248,4 @@ export async function getByCustomerId(customerId) {
 
     return receipts;
 }
+

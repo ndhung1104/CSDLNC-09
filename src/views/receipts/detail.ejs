@@ -20,19 +20,22 @@
                             </a>
                         </div>
 
-                        <% if (typeof error !=='undefined' && error) { %>
-                            <div class="alert alert-danger">
+                        <% if (error) { %>
+                            <div class="alert alert-danger alert-dismissible fade show">
                                 <%= error %>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                             </div>
                             <% } %>
 
-                                <% if (typeof success !=='undefined' && success) { %>
-                                    <div class="alert alert-success">
+                                <% if (success) { %>
+                                    <div class="alert alert-success alert-dismissible fade show">
                                         <%= success %>
+                                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                                     </div>
                                     <% } %>
 
                                         <div class="row g-4">
+                                            <!-- Receipt Info -->
                                             <div class="col-md-6">
                                                 <div class="card">
                                                     <div class="card-header">Thông tin hóa đơn</div>
@@ -55,19 +58,10 @@
                                                                 <a href="/customers/<%= receipt.CUSTOMER_ID %>">
                                                                     <%= receipt.customerName || 'N/A' %>
                                                                 </a>
-                                                                <% } else { %>
-                                                                    N/A
-                                                                    <% } %>
+                                                                <% } else { %>N/A<% } %>
                                                         </p>
-                                                        <p><strong>Phương thức thanh toán:</strong>
+                                                        <p><strong>Phương thức TT:</strong>
                                                             <%= receipt.RECEIPT_PAYMENT_METHOD || 'N/A' %>
-                                                        </p>
-                                                        <p><strong>Tổng tiền:</strong>
-                                                            <span class="text-primary fw-bold fs-5">
-                                                                <%= receipt.RECEIPT_TOTAL_PRICE ?
-                                                                    receipt.RECEIPT_TOTAL_PRICE.toLocaleString('vi-VN')
-                                                                    + 'đ' : '0đ' %>
-                                                            </span>
                                                         </p>
                                                         <p><strong>Trạng thái:</strong>
                                                             <span
@@ -79,40 +73,76 @@
                                                 </div>
                                             </div>
 
+                                            <!-- Actions -->
                                             <div class="col-md-6">
                                                 <div class="card">
                                                     <div class="card-header">Thao tác</div>
                                                     <div class="card-body">
                                                         <% if (receipt.RECEIPT_STATUS==='Chờ thanh toán' ) { %>
+                                                            <!-- Add Item Button -->
+                                                            <button type="button" class="btn btn-primary w-100 mb-3"
+                                                                data-bs-toggle="modal" data-bs-target="#addItemModal">
+                                                                <i class="bi bi-plus-circle me-2"></i>Thêm sản phẩm/dịch
+                                                                vụ
+                                                            </button>
+
+                                                            <!-- Complete Payment Button -->
                                                             <form method="POST"
                                                                 action="/receipts/<%= receipt.RECEIPT_ID %>/complete">
-                                                                <button type="submit" class="btn btn-success w-100">
-                                                                    <i class="bi bi-check-circle me-2"></i>Hoàn thành
-                                                                    thanh toán
+                                                                <button type="submit" class="btn btn-success w-100"
+                                                                    <%=receipt.details && receipt.details.length===0
+                                                                    ? 'disabled' : '' %>>
+                                                                    <i class="bi bi-cash-coin me-2"></i>Thanh toán (<%=
+                                                                        receipt.RECEIPT_TOTAL_PRICE ?
+                                                                        receipt.RECEIPT_TOTAL_PRICE.toLocaleString('vi-VN')
+                                                                        + 'đ' : '0đ' %>)
                                                                 </button>
                                                             </form>
-                                                            <p class="text-muted small mt-2">
-                                                                Nhấn để xác nhận thanh toán và tích điểm cho khách hàng.
-                                                            </p>
-                                                            <% } else if (receipt.RECEIPT_STATUS==='Đã hoàn thành' ) {
-                                                                %>
-                                                                <div class="text-center text-success py-3">
-                                                                    <i class="bi bi-check-circle-fill fs-1"></i>
-                                                                    <p class="mt-2 mb-0">Hóa đơn đã được thanh toán</p>
-                                                                </div>
-                                                                <% } else { %>
-                                                                    <div class="text-center text-muted py-3">
-                                                                        <i class="bi bi-x-circle fs-1"></i>
-                                                                        <p class="mt-2 mb-0">Hóa đơn đã bị hủy</p>
-                                                                    </div>
-                                                                    <% } %>
+                                                            <% if (!receipt.details || receipt.details.length===0) { %>
+                                                                <p class="text-muted small mt-2 mb-0">Vui lòng thêm ít
+                                                                    nhất 1 sản phẩm để thanh toán.</p>
+                                                                <% } %>
+                                                                    <% } else if
+                                                                        (receipt.RECEIPT_STATUS==='Đã hoàn thành' ) { %>
+                                                                        <div class="text-center text-success py-3">
+                                                                            <i class="bi bi-check-circle-fill fs-1"></i>
+                                                                            <p class="mt-2 mb-0">Hóa đơn đã được thanh
+                                                                                toán</p>
+                                                                        </div>
+                                                                        <% } else { %>
+                                                                            <div class="text-center text-muted py-3">
+                                                                                <i class="bi bi-x-circle fs-1"></i>
+                                                                                <p class="mt-2 mb-0">Hóa đơn đã bị hủy
+                                                                                </p>
+                                                                            </div>
+                                                                            <% } %>
                                                     </div>
+                                                    <% if (receipt.RECEIPT_STATUS !=='Chờ thanh toán' ) { %>
+                                                        <div class="card-footer bg-light">
+                                                            <p class="mb-0"><strong>Tổng tiền:</strong>
+                                                                <span class="text-primary fw-bold fs-5">
+                                                                    <%= receipt.RECEIPT_TOTAL_PRICE ?
+                                                                        receipt.RECEIPT_TOTAL_PRICE.toLocaleString('vi-VN')
+                                                                        + 'đ' : '0đ' %>
+                                                                </span>
+                                                            </p>
+                                                        </div>
+                                                        <% } %>
                                                 </div>
                                             </div>
                                         </div>
 
+                                        <!-- Items Table -->
                                         <div class="card mt-4">
-                                            <div class="card-header">Chi tiết sản phẩm/dịch vụ</div>
+                                            <div class="card-header d-flex justify-content-between align-items-center">
+                                                <span>Chi tiết sản phẩm/dịch vụ</span>
+                                                <% if (receipt.RECEIPT_STATUS==='Chờ thanh toán' ) { %>
+                                                    <button type="button" class="btn btn-sm btn-outline-primary"
+                                                        data-bs-toggle="modal" data-bs-target="#addItemModal">
+                                                        <i class="bi bi-plus"></i> Thêm
+                                                    </button>
+                                                    <% } %>
+                                            </div>
                                             <div class="table-responsive">
                                                 <table class="table table-hover mb-0">
                                                     <thead>
@@ -122,6 +152,9 @@
                                                             <th>Số lượng</th>
                                                             <th>Đơn giá</th>
                                                             <th>Thành tiền</th>
+                                                            <% if (receipt.RECEIPT_STATUS==='Chờ thanh toán' ) { %>
+                                                                <th></th>
+                                                                <% } %>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -147,22 +180,115 @@
                                                                             item.RECEIPT_ITEM_PRICE).toLocaleString('vi-VN')
                                                                             %>đ
                                                                     </td>
+                                                                    <% if (receipt.RECEIPT_STATUS==='Chờ thanh toán' ) {
+                                                                        %>
+                                                                        <td>
+                                                                            <form method="POST"
+                                                                                action="/receipts/<%= receipt.RECEIPT_ID %>/items/<%= item.RECEIPT_ITEM_ID %>/delete"
+                                                                                style="display:inline;">
+                                                                                <button type="submit"
+                                                                                    class="btn btn-sm btn-outline-danger"
+                                                                                    title="Xóa"
+                                                                                    onclick="return confirm('Xóa sản phẩm này?')">
+                                                                                    <i class="bi bi-trash"></i>
+                                                                                </button>
+                                                                            </form>
+                                                                        </td>
+                                                                        <% } %>
                                                                 </tr>
                                                                 <% }) %>
                                                                     <% } else { %>
                                                                         <tr>
-                                                                            <td colspan="5"
-                                                                                class="text-center text-muted py-3">Chưa
-                                                                                có chi tiết</td>
+                                                                            <td colspan="<%= receipt.RECEIPT_STATUS === 'Chờ thanh toán' ? 6 : 5 %>"
+                                                                                class="text-center text-muted py-3">
+                                                                                Chưa có chi tiết
+                                                                            </td>
                                                                         </tr>
                                                                         <% } %>
                                                     </tbody>
+                                                    <% if (receipt.details && receipt.details.length> 0) { %>
+                                                        <tfoot class="table-light">
+                                                            <tr>
+                                                                <th colspan="4" class="text-end">Tổng cộng:</th>
+                                                                <th colspan="<%= receipt.RECEIPT_STATUS === 'Chờ thanh toán' ? 2 : 1 %>"
+                                                                    class="text-primary">
+                                                                    <%= receipt.RECEIPT_TOTAL_PRICE ?
+                                                                        receipt.RECEIPT_TOTAL_PRICE.toLocaleString('vi-VN')
+                                                                        + 'đ' : '0đ' %>
+                                                                </th>
+                                                            </tr>
+                                                        </tfoot>
+                                                        <% } %>
                                                 </table>
                                             </div>
                                         </div>
                     </main>
             </div>
     </div>
+
+    <!-- Add Item Modal -->
+    <div class="modal fade" id="addItemModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Thêm sản phẩm/dịch vụ</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="/receipts/<%= receipt.RECEIPT_ID %>/items">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Chọn sản phẩm/dịch vụ <span class="text-danger">*</span></label>
+                            <select name="productId" class="form-select" required>
+                                <option value="">-- Chọn --</option>
+                                <% if (typeof products !=='undefined' && products.length> 0) { %>
+                                    <optgroup label="🛒 Sản phẩm">
+                                        <% products.forEach(p=> { %>
+                                            <option value="<%= p.id %>">
+                                                <%= p.name %> - <%= p.price ? p.price.toLocaleString('vi-VN') + 'đ'
+                                                        : 'N/A' %>
+                                            </option>
+                                            <% }) %>
+                                    </optgroup>
+                                    <% } %>
+                                        <% if (typeof services !=='undefined' && services.length> 0) { %>
+                                            <optgroup label="🩺 Dịch vụ y tế">
+                                                <% services.forEach(s=> { %>
+                                                    <option value="<%= s.id %>">
+                                                        <%= s.name %> - <%= s.price ? s.price.toLocaleString('vi-VN')
+                                                                + 'đ' : 'N/A' %>
+                                                    </option>
+                                                    <% }) %>
+                                            </optgroup>
+                                            <% } %>
+                                                <% if (typeof vaccines !=='undefined' && vaccines.length> 0) { %>
+                                                    <optgroup label="💉 Vaccine">
+                                                        <% vaccines.forEach(v=> { %>
+                                                            <option value="<%= v.id %>">
+                                                                <%= v.name %> - <%= v.price ?
+                                                                        v.price.toLocaleString('vi-VN') + 'đ' : 'N/A' %>
+                                                            </option>
+                                                            <% }) %>
+                                                    </optgroup>
+                                                    <% } %>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Số lượng</label>
+                            <input type="number" name="quantity" class="form-control" value="1" min="1" max="100"
+                                required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-1"></i>Thêm
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <%- include('../partials/common/scripts') %>
 </body>
 

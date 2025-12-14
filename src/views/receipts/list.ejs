@@ -15,9 +15,28 @@
                             <h1 class="h3 mb-0">
                                 <%= title %>
                             </h1>
-                            <a href="/receipts/create" class="btn btn-primary"><i class="bi bi-plus-lg me-2"></i>Tạo hóa
-                                đơn</a>
+                            <a href="/receipts/create" class="btn btn-primary">
+                                <i class="bi bi-plus-lg me-2"></i>Tạo hóa đơn
+                            </a>
                         </div>
+
+                        <!-- Sort Controls -->
+                        <div class="card mb-3">
+                            <div class="card-body py-2">
+                                <form method="GET" class="d-flex align-items-center gap-3">
+                                    <label class="mb-0">Sắp xếp theo:</label>
+                                    <select name="sort" class="form-select form-select-sm" style="width: auto;"
+                                        onchange="this.form.submit()">
+                                        <option value="status" <%=sort==='status' ? 'selected' : '' %>>Chờ thanh toán
+                                            trước</option>
+                                        <option value="date" <%=sort==='date' ? 'selected' : '' %>>Ngày tạo mới nhất
+                                        </option>
+                                        <option value="id" <%=sort==='id' ? 'selected' : '' %>>Mã hóa đơn</option>
+                                    </select>
+                                </form>
+                            </div>
+                        </div>
+
                         <div class="card">
                             <div class="table-responsive">
                                 <table class="table table-hover mb-0">
@@ -38,28 +57,34 @@
                                                 <td colspan="7" class="text-center text-muted py-4">Chưa có hóa đơn</td>
                                             </tr>
                                             <% } else { receipts.forEach(r=> { %>
-                                                <tr>
-                                                    <td>
-                                                        <%= r.id %>
-                                                    </td>
+                                                <tr class="<%= r.status === 'Chờ thanh toán' ? 'table-warning' : '' %>">
+                                                    <td><strong>#<%= r.id %></strong></td>
                                                     <td>
                                                         <%= new Date(r.date).toLocaleDateString('vi-VN') %>
                                                     </td>
-                                                    <td><a href="/customers/<%= r.customerId %>">
+                                                    <td>
+                                                        <a href="/customers/<%= r.customerId %>">
                                                             <%= r.customerName || '-' %>
-                                                        </a></td>
+                                                        </a>
+                                                    </td>
                                                     <td>
                                                         <%= r.branchName %>
                                                     </td>
                                                     <td>
                                                         <%= (r.total || 0).toLocaleString('vi-VN') %>đ
                                                     </td>
-                                                    <td><span
+                                                    <td>
+                                                        <span
                                                             class="badge bg-<%= r.status === 'Đã hoàn thành' ? 'success' : 'warning' %>">
                                                             <%= r.status %>
-                                                        </span></td>
-                                                    <td><a href="/receipts/<%= r.id %>"
-                                                            class="btn btn-sm btn-outline-primary">Chi tiết</a></td>
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <a href="/receipts/<%= r.id %>"
+                                                            class="btn btn-sm btn-<%= r.status === 'Chờ thanh toán' ? 'primary' : 'outline-primary' %>">
+                                                            <%= r.status==='Chờ thanh toán' ? 'Tiếp tục' : 'Chi tiết' %>
+                                                        </a>
+                                                    </td>
                                                 </tr>
                                                 <% }) } %>
                                     </tbody>
