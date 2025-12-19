@@ -2,8 +2,20 @@ import db from '../utils/db.js';
 
 // Get all checkups with filters (using raw SQL with TOP for reliability)
 export async function getAll({ vetId = null, status = null, page = 1, limit = 20 } = {}) {
+    const filters = [];
+    const params = [];
+    if (vetId != null) {
+        filters.push('c.VET_ID = ?');
+        params.push(vetId);
+    }
+    if (status) {
+        filters.push('c.STATUS = ?');
+        params.push(status);
+    }
+    const whereClause = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
+
     // Count query
-    const countResult = await db.raw('SELECT COUNT(*) as count FROM CHECK_UP');
+    const countResult = await db.raw(`SELECT COUNT(*) as count FROM CHECK_UP c ${whereClause}`, params);
     const total = countResult[0]?.count || 0;
 
     // Data query using raw SQL with TOP (simpler for SQL Server)
@@ -23,8 +35,9 @@ export async function getAll({ vetId = null, status = null, page = 1, limit = 20
         JOIN PET p ON c.PET_ID = p.PET_ID
         JOIN CUSTOMER cu ON p.CUSTOMER_ID = cu.CUSTOMER_ID
         LEFT JOIN EMPLOYEE e ON c.VET_ID = e.EMPLOYEE_ID
+        ${whereClause}
         ORDER BY c.CHECK_UP_ID DESC
-    `);
+    `, params);
 
     return { checkups, total, page, limit };
 }

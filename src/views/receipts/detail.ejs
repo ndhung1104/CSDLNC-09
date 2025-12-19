@@ -243,7 +243,7 @@
                                 <% if (typeof products !=='undefined' && products.length> 0) { %>
                                     <optgroup label="🛒 Sản phẩm">
                                         <% products.forEach(p=> { %>
-                                            <option value="<%= p.id %>">
+                                            <option value="<%= p.id %>" data-item-type="product">
                                                 <%= p.name %> - <%= p.price ? p.price.toLocaleString('vi-VN') + 'đ'
                                                         : 'N/A' %>
                                             </option>
@@ -253,31 +253,49 @@
                                         <% if (typeof services !=='undefined' && services.length> 0) { %>
                                             <optgroup label="🩺 Dịch vụ y tế">
                                                 <% services.forEach(s=> { %>
-                                                    <option value="<%= s.id %>">
+                                                    <option value="<%= s.id %>" data-item-type="service">
                                                         <%= s.name %> - <%= s.price ? s.price.toLocaleString('vi-VN')
                                                                 + 'đ' : 'N/A' %>
                                                     </option>
                                                     <% }) %>
                                             </optgroup>
                                             <% } %>
-                                                <% if (typeof vaccines !=='undefined' && vaccines.length> 0) { %>
-                                                    <optgroup label="💉 Vaccine">
-                                                        <% vaccines.forEach(v=> { %>
-                                                            <option value="<%= v.id %>">
-                                                                <%= v.name %> - <%= v.price ?
-                                                                        v.price.toLocaleString('vi-VN') + 'đ' : 'N/A' %>
-                                                            </option>
-                                                            <% }) %>
-                                                    </optgroup>
-                                                    <% } %>
+                                            <% if (typeof plans !=='undefined' && plans.length> 0) { %>
+                                            <optgroup label="Vaccination Plans">
+                                                <% plans.forEach(pl=> { %>
+                                                    <option value="<%= pl.id %>" data-item-type="plan">
+                                                        <%= pl.name %> - <%= pl.price ? pl.price.toLocaleString('vi-VN')
+                                                                + 'd' : 'N/A' %>
+                                                    </option>
+                                                    <% }) %>
+                                            </optgroup>
+                                            <% } %>
                             </select>
                         </div>
+                        <% if (typeof pets !=='undefined' && pets.length> 0) { %>
                         <div class="mb-3">
-                            <label class="form-label">Số lượng</label>
+                            <label class="form-label">Pet (required for plan)</label>
+                            <select name="petId" id="petIdSelect" class="form-select">
+                                <option value="">-- Select pet --</option>
+                                <% pets.forEach(pet=> { %>
+                                    <option value="<%= pet.id %>"><%= pet.name %></option>
+                                    <% }) %>
+                            </select>
+                            <div id="planPetNote" class="form-text text-muted" style="display:none;">
+                                Pet is required for vaccination plans.
+                            </div>
+                        </div>
+                        <% } else { %>
+                        <div class="mb-3">
+                            <div class="form-text text-muted">No pets available for this customer.</div>
+                        </div>
+                        <% } %>
+                        <div class="mb-3">
+                            <label class="form-label">S? lu?ng</label>
                             <input type="number" name="quantity" class="form-control" value="1" min="1" max="100"
                                 required>
                         </div>
-                    </div>
+
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
                         <button type="submit" class="btn btn-primary">
@@ -290,6 +308,26 @@
     </div>
 
     <%- include('../partials/common/scripts') %>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const itemSelect = document.querySelector('select[name="productId"]');
+            const petSelect = document.getElementById('petIdSelect');
+            const planNote = document.getElementById('planPetNote');
+            if (!itemSelect || !petSelect) return;
+
+            function syncPetRequirement() {
+                const selected = itemSelect.options[itemSelect.selectedIndex];
+                const itemType = selected ? selected.getAttribute('data-item-type') : null;
+                const isPlan = itemType === 'plan';
+                petSelect.required = isPlan;
+                if (planNote) planNote.style.display = isPlan ? 'block' : 'none';
+            }
+
+            itemSelect.addEventListener('change', syncPetRequirement);
+            syncPetRequirement();
+        });
+    </script>
+
 </body>
 
 </html>

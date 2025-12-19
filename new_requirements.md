@@ -1,0 +1,20 @@
+- Cài đặt ứng dụng với yêu cầu tối thiểu gồm
+  - **Khách hàng**:
+    - Tìm kiếm, đặt mua sản phẩm
+    - Đặt lịch khám
+    - Tra cứu lịch bác sĩ
+    - Xem lịch sử mua/khám cho thú cưng
+  - **Bác sĩ**:
+    - Tra cứu hồ sơ khám của thú cưng
+    - Xem lịch sử khám
+    - Tra cứu thuốc
+    - Tạo bệnh án mới
+    - Kê toa
+  - **Nhân viên**:
+    - Tạo lịch khám trực tiếp (khách đến trực tiếp)
+    - Tra cứu thú cưng (để xác định lần đầu/khách cũ)
+  - **Quản lý**:
+    - Thống kê doanh thu phòng khám / theo bác sĩ
+    - Số lượt khám
+    - Doanh thu bán sản phẩm
+    - Doanh thu tất cả chi nhánh

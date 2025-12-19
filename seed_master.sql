@@ -151,12 +151,12 @@ GO
    8. VACCINE (identity, explicit IDs for FK)
    ========================================== */
 SET IDENTITY_INSERT VACCINE ON;
-INSERT INTO VACCINE (VACCINE_ID, VACCINE_NAME, VACCINE_DES) VALUES
-(1, N'Vaccine 5 trong 1 cho chó', N'Phòng care, parvo, viêm gan, ho cũi chó, dại.'),
-(2, N'Vaccine 7 trong 1 cho chó', N'Phòng nhiều bệnh truyền nhiễm cho chó.'),
-(3, N'Vaccine dại cho chó mèo',  N'Phòng bệnh dại.'),
-(4, N'Vaccine 4 trong 1 cho mèo', N'Phòng cúm mèo, viêm mũi họng, panleukopenia...'),
-(5, N'Vaccine FIP cho mèo',      N'Hỗ trợ phòng một số bệnh truyền nhiễm.');
+INSERT INTO VACCINE (VACCINE_ID, VACCINE_NAME, VACCINE_DES, VACCINE_PRICE) VALUES
+(1, N'Vaccine 5 trong 1 cho chó', N'Phòng care, parvo, viêm gan, ho cũi chó, dại.', 250000),
+(2, N'Vaccine 7 trong 1 cho chó', N'Phòng nhiều bệnh truyền nhiễm cho chó.', 300000),
+(3, N'Vaccine dại cho chó mèo',  N'Phòng bệnh dại.', 200000),
+(4, N'Vaccine 4 trong 1 cho mèo', N'Phòng cúm mèo, viêm mũi họng, panleukopenia...', 250000),
+(5, N'Vaccine FIP cho mèo',      N'Hỗ trợ phòng một số bệnh truyền nhiễm.', 350000);
 SET IDENTITY_INSERT VACCINE OFF;
 GO
 

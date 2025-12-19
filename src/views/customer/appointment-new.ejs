@@ -19,8 +19,8 @@
                   <% if (typeof pets !== 'undefined' && pets && pets.length > 0) { %>
                     <% pets.forEach((pet) => { %>
                       <div class="col-md-6">
-                        <input type="radio" class="btn-check" name="petId" id="pet<%= pet.petId %>" value="<%= pet.petId %>" required>
-                        <label class="btn btn-outline-primary w-100 text-start p-3" for="pet<%= pet.petId %>">
+                        <input type="radio" class="btn-check" name="petId" id="pet<%= pet.id || pet.petId %>" value="<%= pet.id || pet.petId %>" required>
+                        <label class="btn btn-outline-primary w-100 text-start p-3" for="pet<%= pet.id || pet.petId %>">
                           <div class="d-flex align-items-center">
                             <div class="pet-avatar me-3" style="width: 50px; height: 50px; font-size: 1.2rem;">
                               <%= pet.name.substring(0, 1) %>
@@ -28,7 +28,7 @@
                             <div>
                               <strong><%= pet.name %></strong>
                               <br>
-                              <small class="text-muted"><%= pet.breed %> • <%= pet.typeOfPet %></small>
+                              <small class="text-muted"><%= pet.breedName || pet.breed %> • <%= pet.typeOfPet %></small>
                             </div>
                           </div>
                         </label>

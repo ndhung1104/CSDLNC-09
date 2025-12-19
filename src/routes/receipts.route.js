@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { requireRole, requireAnyEmployee } from '../middleware/auth.middleware.js';
 import * as receiptModel from '../models/receipt.model.js';
 import * as customerModel from '../models/customer.model.js';
+import * as petModel from '../models/pet.model.js';
 
 const router = Router();
 
@@ -68,14 +69,16 @@ router.get('/:id', requireAnyEmployee(), async (req, res) => {
         // Get available items for the add modal
         const products = await receiptModel.getProducts();
         const services = await receiptModel.getServices();
-        const vaccines = await receiptModel.getVaccines();
+        const plans = await receiptModel.getVaccinationPlans();
+        const pets = receipt.CUSTOMER_ID ? await petModel.getByCustomerId(receipt.CUSTOMER_ID) : [];
 
         res.render('receipts/detail', {
             title: `Hóa đơn #${receipt.RECEIPT_ID}`,
             receipt,
             products,
             services,
-            vaccines,
+            plans,
+            pets,
             error: req.query.error || null,
             success: req.query.success || null,
             employee: req.session.employee
@@ -88,14 +91,37 @@ router.get('/:id', requireAnyEmployee(), async (req, res) => {
 
 // Add item to receipt
 router.post('/:id/items', requireAnyEmployee(), async (req, res) => {
-    const { productId, quantity } = req.body;
+    const { productId, quantity, petId } = req.body;
     try {
+        const itemId = parseInt(productId);
+        const receiptId = parseInt(req.params.id);
+        const plan = await receiptModel.getVaccinationPlanById(itemId);
+
+        if (plan) {
+            const receiptInfo = await receiptModel.getReceiptInfo(receiptId);
+            if (!receiptInfo?.customerId) {
+                throw new Error('Receipt customer is required for vaccination plans.');
+            }
+            if (!petId) {
+                throw new Error('Please select a pet for the vaccination plan.');
+            }
+            await receiptModel.addVaccinationPlanItem({
+                receiptId,
+                planId: itemId,
+                petId: parseInt(petId),
+                customerId: receiptInfo.customerId
+            });
+            res.redirect(`/receipts/${req.params.id}?success=Da+th?m+goi+ti?m`);
+            return;
+        }
+
         await receiptModel.addItem({
-            receiptId: parseInt(req.params.id),
-            productId: parseInt(productId),
-            quantity: parseInt(quantity) || 1
+            receiptId,
+            productId: itemId,
+            quantity: parseInt(quantity) || 1,
+            petId: petId ? parseInt(petId) : null
         });
-        res.redirect(`/receipts/${req.params.id}?success=Đã+thêm+sản+phẩm`);
+        res.redirect(`/receipts/${req.params.id}?success=Da+th?m+s?n+ph?m`);
     } catch (err) {
         console.error(err);
         res.redirect(`/receipts/${req.params.id}?error=${encodeURIComponent(err.message)}`);

@@ -102,11 +102,26 @@ export async function addItem({ receiptId, productId, quantity, petId = null, pr
 
     // Get product price if not provided
     let unitPrice = price;
-    if (!unitPrice) {
+    if (unitPrice == null) {
         const priceResult = await db.raw(`
             SELECT SALES_PRODUCT_PRICE as price FROM SALES_PRODUCT WHERE SALES_PRODUCT_ID = ?
         `, [productId]);
-        unitPrice = priceResult[0]?.price || 0;
+        unitPrice = priceResult[0]?.price;
+    }
+    if (unitPrice == null) {
+        const serviceResult = await db.raw(`
+            SELECT MEDICAL_SERVICE_FEE as price FROM MEDICAL_SERVICE WHERE MEDICAL_SERVICE_ID = ?
+        `, [productId]);
+        unitPrice = serviceResult[0]?.price;
+    }
+    if (unitPrice == null) {
+        const planResult = await db.raw(`
+            SELECT VACCINATION_PLAN_PRICE as price FROM VACCINATION_PLAN WHERE VACCINATION_PLAN_ID = ?
+        `, [productId]);
+        unitPrice = planResult[0]?.price;
+    }
+    if (unitPrice == null) {
+        unitPrice = 0;
     }
 
     // Insert the item
@@ -186,17 +201,104 @@ export async function getServices() {
     `);
 }
 
-// Get vaccines for item picker (vaccines don't have individual prices in the schema)
+// Get vaccination plans for item picker
+export async function getVaccinationPlans() {
+    return db.raw(`
+        SELECT 
+            vp.VACCINATION_PLAN_ID as id,
+            p.PRODUCT_NAME as name,
+            vp.VACCINATION_PLAN_DURATION as duration,
+            vp.VACCINATION_PLAN_PRICE as price,
+            'plan' as type
+        FROM VACCINATION_PLAN vp
+        JOIN PRODUCT p ON vp.VACCINATION_PLAN_ID = p.PRODUCT_ID
+        ORDER BY p.PRODUCT_NAME
+    `);
+}
+
+// Get vaccination plan by ID
+export async function getVaccinationPlanById(planId) {
+    const result = await db.raw(`
+        SELECT 
+            vp.VACCINATION_PLAN_ID as id,
+            vp.VACCINATION_PLAN_DURATION as duration,
+            vp.VACCINATION_PLAN_PRICE as price
+        FROM VACCINATION_PLAN vp
+        WHERE vp.VACCINATION_PLAN_ID = ?
+    `, [planId]);
+    return result[0] || null;
+}
+
+// Get minimal receipt info for item operations
+export async function getReceiptInfo(receiptId) {
+    return db('RECEIPT')
+        .select('CUSTOMER_ID as customerId', 'RECEIPT_STATUS as status')
+        .where('RECEIPT_ID', receiptId)
+        .first();
+}
+
+// Get vaccines for item picker
 export async function getVaccines() {
     return db.raw(`
         SELECT 
             v.VACCINE_ID as id,
             v.VACCINE_NAME as name,
-            0 as price,
+            v.VACCINE_PRICE as price,
             'vaccine' as type
         FROM VACCINE v
         ORDER BY v.VACCINE_NAME
     `);
+}
+
+// Add vaccination plan item to receipt and create pet plan record
+export async function addVaccinationPlanItem({ receiptId, planId, petId, customerId }) {
+    return db.transaction(async (trx) => {
+        const priceResult = await trx.raw(`
+            SELECT CAST(
+                vp.VACCINATION_PLAN_PRICE * (1 - dbo.fnGetMembershipDiscountPercent(c.MEMBERSHIP_RANK_ID))
+                AS DECIMAL(18,0)
+            ) as price
+            FROM VACCINATION_PLAN vp
+            JOIN CUSTOMER c ON c.CUSTOMER_ID = ?
+            WHERE vp.VACCINATION_PLAN_ID = ?
+        `, [customerId, planId]);
+
+        const unitPrice = priceResult[0]?.price;
+        if (unitPrice == null) {
+            throw new Error('Vaccination plan not found.');
+        }
+
+        await trx.raw(`
+            DECLARE @NewId INT;
+            EXEC dbo.uspPetVaccinationPlanCreate
+                @PetId = ?,
+                @VaccinationPlanId = ?,
+                @PlanStartDate = ?,
+                @PetVaccinationPlanId = @NewId OUTPUT;
+            SELECT @NewId AS id;
+        `, [petId, planId, new Date()]);
+
+        const maxResult = await trx.raw(`
+            SELECT ISNULL(MAX(RECEIPT_ITEM_ID), 0) as maxId FROM RECEIPT_DETAIL
+        `);
+        const nextItemId = (maxResult[0]?.maxId || 0) + 1;
+
+        await trx.raw(`
+            INSERT INTO RECEIPT_DETAIL (RECEIPT_ITEM_ID, RECEIPT_ID, PRODUCT_ID, PET_ID, RECEIPT_ITEM_AMOUNT, RECEIPT_ITEM_PRICE)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `, [nextItemId, receiptId, planId, petId, 1, unitPrice]);
+
+        await trx.raw(`
+            UPDATE RECEIPT
+            SET RECEIPT_TOTAL_PRICE = (
+                SELECT ISNULL(SUM(RECEIPT_ITEM_AMOUNT * RECEIPT_ITEM_PRICE), 0)
+                FROM RECEIPT_DETAIL WHERE RECEIPT_ID = ?
+            )
+            WHERE RECEIPT_ID = ?
+        `, [receiptId, receiptId]);
+
+        return nextItemId;
+    });
 }
 
 // Get branches for dropdown
