@@ -351,3 +351,54 @@ export async function getByCustomerId(customerId) {
     return receipts;
 }
 
+// Get receipts with items for a specific pet and customer
+export async function getByPetIdForCustomer({ petId, customerId }) {
+    const rows = await db('RECEIPT_DETAIL as rd')
+        .join('RECEIPT as r', 'rd.RECEIPT_ID', 'r.RECEIPT_ID')
+        .join('PRODUCT as p', 'rd.PRODUCT_ID', 'p.PRODUCT_ID')
+        .leftJoin('BRANCH as b', 'r.BRANCH_ID', 'b.BRANCH_ID')
+        .select(
+            'r.RECEIPT_ID as id',
+            'r.RECEIPT_STATUS as status',
+            'r.RECEIPT_TOTAL_PRICE as total',
+            'r.RECEIPT_CREATED_DATE as date',
+            'r.RECEIPT_PAYMENT_METHOD as paymentMethod',
+            'b.BRANCH_NAME as branchName',
+            'rd.RECEIPT_ITEM_ID as itemId',
+            'rd.RECEIPT_ITEM_AMOUNT as quantity',
+            'rd.RECEIPT_ITEM_PRICE as price',
+            'p.PRODUCT_NAME as productName'
+        )
+        .where('rd.PET_ID', petId)
+        .andWhere('r.CUSTOMER_ID', customerId)
+        .orderBy('r.RECEIPT_CREATED_DATE', 'desc')
+        .orderBy('rd.RECEIPT_ITEM_ID', 'asc');
+
+    if (rows.length === 0) return [];
+
+    const receipts = [];
+    const receiptMap = {};
+
+    rows.forEach(row => {
+        if (!receiptMap[row.id]) {
+            receiptMap[row.id] = {
+                id: row.id,
+                status: row.status,
+                total: row.total,
+                date: row.date,
+                paymentMethod: row.paymentMethod,
+                branchName: row.branchName,
+                items: []
+            };
+            receipts.push(receiptMap[row.id]);
+        }
+        receiptMap[row.id].items.push({
+            itemName: row.productName,
+            quantity: row.quantity,
+            price: row.price
+        });
+    });
+
+    return receipts;
+}
+

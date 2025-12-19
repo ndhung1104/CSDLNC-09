@@ -340,20 +340,75 @@ router.post('/appointments/:id/cancel', requireCustomer, async (req, res) => {
 });
 
 router.get('/pets', requireCustomer, async (req, res) => {
+    try {
+        const customerId = req.session.customer?.id;
+        const pets = await petModel.getByCustomerId(customerId);
+        renderCustomerPage(res, 'customer/pets', {
+            title: 'My Pets',
+            pets,
+        });
+    } catch (err) {
+        console.error('Guest pets error:', err);
+        renderCustomerPage(res, 'customer/pets', {
+            title: 'My Pets',
+            pets: [],
+            error: 'Unable to load pets',
+        });
+    }
+});
+
+router.get('/pets/:id/history', requireCustomer, async (req, res) => {
+  const customerId = req.session.customer?.id;
+  const { fromDate = '', toDate = '', status = '' } = req.query;
   try {
-    const customerId = req.session.customer?.id;
-    const pets = await petModel.getByCustomerId(customerId);
-    renderCustomerPage(res, 'customer/pets', {
-      title: 'My Pets',
-      pets,
+    const petRecord = await petModel.getById(req.params.id);
+    if (!petRecord || petRecord.CUSTOMER_ID !== customerId) {
+      return res.redirect('/guest/customer/pets');
+    }
+
+    const pet = {
+      id: petRecord.PET_ID || petRecord.id,
+      name: petRecord.PET_NAME || petRecord.name,
+      breed: petRecord.breedName || petRecord.breed,
+      type: petRecord.typeOfPet || petRecord.type,
+      gender: petRecord.PET_GENDER || petRecord.gender,
+      birthdate: petRecord.PET_BIRTHDATE || petRecord.birthdate,
+      healthStatus: petRecord.PET_HEALTH_STATUS || petRecord.healthStatus,
+    };
+
+    const checkups = await checkupModel.getByPetId(pet.id);
+    const receipts = await receiptModel.getByPetIdForCustomer({ petId: pet.id, customerId });
+
+    const fromDateValue = fromDate ? new Date(fromDate) : null;
+    const toDateValue = toDate ? new Date(`${toDate}T23:59:59`) : null;
+    const statusValue = status ? status.toLowerCase() : '';
+
+    const filteredCheckups = checkups.filter(c => {
+      const dateValue = c.date ? new Date(c.date) : null;
+      if (fromDateValue && dateValue && dateValue < fromDateValue) return false;
+      if (toDateValue && dateValue && dateValue > toDateValue) return false;
+      if (statusValue && !String(c.status || '').toLowerCase().includes(statusValue)) return false;
+      return true;
+    });
+
+    const filteredReceipts = receipts.filter(r => {
+      const dateValue = r.date ? new Date(r.date) : null;
+      if (fromDateValue && dateValue && dateValue < fromDateValue) return false;
+      if (toDateValue && dateValue && dateValue > toDateValue) return false;
+      if (statusValue && !String(r.status || '').toLowerCase().includes(statusValue)) return false;
+      return true;
+    });
+
+    renderCustomerPage(res, 'customer/pet-history', {
+      title: `History - ${pet.name}`,
+      pet,
+      checkups: filteredCheckups,
+      receipts: filteredReceipts,
+      filters: { fromDate, toDate, status }
     });
   } catch (err) {
-    console.error('Guest pets error:', err);
-    renderCustomerPage(res, 'customer/pets', {
-      title: 'My Pets',
-      pets: [],
-      error: 'Unable to load pets',
-    });
+    console.error('Guest pet history error:', err);
+    res.redirect('/guest/customer/pets');
   }
 });
 
