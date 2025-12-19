@@ -381,13 +381,28 @@ router.get('/pets/:id/history', requireCustomer, async (req, res) => {
 
     const fromDateValue = fromDate ? new Date(fromDate) : null;
     const toDateValue = toDate ? new Date(`${toDate}T23:59:59`) : null;
-    const statusValue = status ? status.toLowerCase() : '';
+    const normalizeStatus = (value) => String(value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+    const statusValue = normalizeStatus(status);
+    const statusMatchers = {
+      pending: ['cho', 'pending'],
+      'in progress': ['dang', 'progress'],
+      completed: ['hoan', 'complete']
+    };
+    const statusTokens = statusValue ? (statusMatchers[statusValue] || [statusValue]) : [];
+    const matchesStatus = (rawStatus) => {
+      if (!statusTokens.length) return true;
+      const normalized = normalizeStatus(rawStatus);
+      return statusTokens.some(token => normalized.includes(token));
+    };
 
     const filteredCheckups = checkups.filter(c => {
       const dateValue = c.date ? new Date(c.date) : null;
       if (fromDateValue && dateValue && dateValue < fromDateValue) return false;
       if (toDateValue && dateValue && dateValue > toDateValue) return false;
-      if (statusValue && !String(c.status || '').toLowerCase().includes(statusValue)) return false;
+      if (!matchesStatus(c.status)) return false;
       return true;
     });
 
@@ -395,7 +410,7 @@ router.get('/pets/:id/history', requireCustomer, async (req, res) => {
       const dateValue = r.date ? new Date(r.date) : null;
       if (fromDateValue && dateValue && dateValue < fromDateValue) return false;
       if (toDateValue && dateValue && dateValue > toDateValue) return false;
-      if (statusValue && !String(r.status || '').toLowerCase().includes(statusValue)) return false;
+      if (!matchesStatus(r.status)) return false;
       return true;
     });
 

@@ -33,8 +33,12 @@
           </div>
           <div class="col-md-4">
             <label class="form-label">Status</label>
-            <input type="text" class="form-control" name="status" placeholder="Pending / Completed"
-              value="<%= filters && filters.status ? filters.status : '' %>">
+            <select class="form-select" name="status">
+              <option value="" <%= filters && !filters.status ? 'selected' : '' %>>All</option>
+              <option value="pending" <%= filters && filters.status === 'pending' ? 'selected' : '' %>>Pending</option>
+              <option value="in progress" <%= filters && filters.status === 'in progress' ? 'selected' : '' %>>In progress</option>
+              <option value="completed" <%= filters && filters.status === 'completed' ? 'selected' : '' %>>Completed</option>
+            </select>
           </div>
           <div class="col-12 d-flex gap-2">
             <button type="submit" class="btn btn-primary">Apply Filters</button>
