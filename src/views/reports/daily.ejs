@@ -26,9 +26,9 @@
                                     <div class="col-md-4">
                                         <label class="form-label">Chi nhánh</label>
                                         <select class="form-select" name="branchId">
+                                            <option value="all" <%= isAllBranches ? 'selected' : '' %>>All branches</option>
                                             <% branches.forEach(b=> { %>
-                                                <option value="<%= b.id %>" <%=b.id===employee.branchId ? 'selected'
-                                                    : '' %>><%= b.name %>
+                                                <option value="<%= b.id %>" <%= (!isAllBranches && String(b.id) === String(selectedBranchId)) ? 'selected' : '' %>><%= b.name %>
                                                 </option>
                                                 <% }) %>
                                         </select>
@@ -51,6 +51,10 @@
                                         <% const empStats=Array.isArray(report.employeeStats) ? report.employeeStats :
                                             []; %>
                                             <% const custStats=report.customerStats || {}; %>
+                                            <% const visitStats=report.visitStats || {}; %>
+                                            <% const productRevenue=report.productRevenue || {}; %>
+                                            <% const doctorRevenue=Array.isArray(report.doctorRevenue) ? report.doctorRevenue : []; %>
+                                            <% const branchRevenue=Array.isArray(report.branchRevenue) ? report.branchRevenue : []; %>
                                                 <div class="row g-4 mb-4">
                                                     <div class="col-md-4">
                                                         <div class="card bg-primary text-white">
@@ -81,6 +85,25 @@
                                                                         (custStats.ReturningCustomers || 0) %>
                                                                 </h2>
                                                                 <small>Khách hàng</small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="row g-4 mb-4">
+                                                    <div class="col-md-6">
+                                                        <div class="card bg-secondary text-white">
+                                                            <div class="card-body text-center">
+                                                                <h2 class="mb-0"><%= visitStats.TotalVisits || 0 %></h2>
+                                                                <small>Total visits</small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="card bg-dark text-white">
+                                                            <div class="card-body text-center">
+                                                                <h2 class="mb-0"><%= (productRevenue.TotalProductRevenue || 0).toLocaleString('vi-VN') %>d</h2>
+                                                                <small>Product revenue</small>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -134,7 +157,104 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <% } else { %>
+                                                <div class="row g-4 mt-4">
+                                                    <div class="col-md-6">
+                                                        <div class="card">
+                                                            <div class="card-header">Top products</div>
+                                                            <div class="table-responsive">
+                                                                <table class="table mb-0">
+                                                                    <thead>
+                                                                        <tr>
+                                                                            <th>Product</th>
+                                                                            <th>Qty</th>
+                                                                            <th>Revenue</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                        <% if (productRevenue.TopProducts && productRevenue.TopProducts.length > 0) { %>
+                                                                            <% productRevenue.TopProducts.forEach(p => { %>
+                                                                                <tr>
+                                                                                    <td><%= p.ProductName %></td>
+                                                                                    <td><%= p.Quantity %></td>
+                                                                                    <td><%= (p.Revenue || 0).toLocaleString('vi-VN') %>d</td>
+                                                                                </tr>
+                                                                            <% }) %>
+                                                                        <% } else { %>
+                                                                            <tr>
+                                                                                <td colspan="3" class="text-muted text-center">No data</td>
+                                                                            </tr>
+                                                                        <% } %>
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="card">
+                                                            <div class="card-header">Doctor revenue (all time)</div>
+                                                            <div class="table-responsive">
+                                                                <table class="table mb-0">
+                                                                    <thead>
+                                                                        <tr>
+                                                                            <th>Doctor</th>
+                                                                            <th>Visits</th>
+                                                                            <th>Revenue</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                        <% if (doctorRevenue.length > 0) { %>
+                                                                            <% doctorRevenue.forEach(d => { %>
+                                                                                <tr>
+                                                                                    <td><%= d.VetName %></td>
+                                                                                    <td><%= d.VisitCount || 0 %></td>
+                                                                                    <td><%= (d.TotalRevenue || 0).toLocaleString('vi-VN') %>d</td>
+                                                                                </tr>
+                                                                            <% }) %>
+                                                                        <% } else { %>
+                                                                            <tr>
+                                                                                <td colspan="3" class="text-muted text-center">No data</td>
+                                                                            </tr>
+                                                                        <% } %>
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <% if (isAllBranches) { %>
+                                                    <div class="card mt-4">
+                                                        <div class="card-header">All branches revenue</div>
+                                                        <div class="table-responsive">
+                                                            <table class="table mb-0">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th>Branch</th>
+                                                                        <th>Receipts</th>
+                                                                        <th>Revenue</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    <% if (branchRevenue.length > 0) { %>
+                                                                        <% branchRevenue.forEach(b => { %>
+                                                                            <tr>
+                                                                                <td><%= b.BranchName %></td>
+                                                                                <td><%= b.ReceiptCount || 0 %></td>
+                                                                                <td><%= (b.TotalRevenue || 0).toLocaleString('vi-VN') %>d</td>
+                                                                            </tr>
+                                                                        <% }) %>
+                                                                    <% } else { %>
+                                                                        <tr>
+                                                                            <td colspan="3" class="text-muted text-center">No data</td>
+                                                                        </tr>
+                                                                    <% } %>
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                <% } %>
+
+<% } else { %>
                                                     <div class="alert alert-info">Chọn ngày và nhấn "Xem báo cáo" để xem
                                                         kết quả.</div>
                                                     <% } %>

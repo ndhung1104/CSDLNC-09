@@ -56,10 +56,15 @@
                                                     <td>
                                                         <%= c.vetName %>
                                                     </td>
-                                                    <td><span
-                                                            class="badge bg-<%= c.status === 'Hoàn thành' ? 'success' : c.status === 'Chờ' ? 'warning' : 'secondary' %>">
+                                                    <td>
+                                                        <% const statusText = c.status || ''; %>
+                                                        <% const normalizedStatus = statusText.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); %>
+                                                        <% const isCompleted = normalizedStatus.includes('hoan') || normalizedStatus.includes('complete'); %>
+                                                        <% const isPending = normalizedStatus.includes('cho') || normalizedStatus.includes('pending'); %>
+                                                        <span class="badge bg-<%= isCompleted ? 'success' : isPending ? 'warning' : 'secondary' %>">
                                                             <%= c.status %>
-                                                        </span></td>
+                                                        </span>
+                                                    </td>
                                                     <td><a href="/checkups/<%= c.id %>"
                                                             class="btn btn-sm btn-outline-primary">Chi tiết</a></td>
                                                 </tr>

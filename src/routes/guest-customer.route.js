@@ -7,6 +7,8 @@ import * as checkupModel from '../models/checkup.model.js';
 import * as receiptModel from '../models/receipt.model.js';
 import * as reportModel from '../models/report.model.js';
 import * as appointmentModel from '../models/appointment.model.js';
+import * as productModel from '../models/product.model.js';
+import * as employeeModel from '../models/employee.model.js';
 
 const {
   getCustomerDashboardData,
@@ -369,6 +371,88 @@ router.get('/receipts', requireCustomer, async (req, res) => {
       title: 'Receipts',
       receipts: [],
       error: 'Unable to load receipts',
+    });
+  }
+});
+
+router.get('/products', requireCustomer, async (req, res) => {
+  const { search = '', page = 1 } = req.query;
+  try {
+    const { products, total, limit } = await productModel.getAll({
+      search,
+      page: parseInt(page) || 1
+    });
+    const totalPages = Math.ceil(total / limit);
+    renderCustomerPage(res, 'customer/products', {
+      title: 'Products',
+      products,
+      search,
+      page: parseInt(page) || 1,
+      totalPages
+    });
+  } catch (err) {
+    console.error('Guest products error:', err);
+    renderCustomerPage(res, 'customer/products', {
+      title: 'Products',
+      products: [],
+      search,
+      page: 1,
+      totalPages: 0,
+      error: 'Unable to load products'
+    });
+  }
+});
+
+router.get('/products/:id/purchase', requireCustomer, async (req, res) => {
+  try {
+    const product = await productModel.getById(req.params.id);
+    if (!product) return res.redirect('/guest/customer/products');
+    renderCustomerPage(res, 'customer/product-purchase', {
+      title: `Buy ${product.name}`,
+      product,
+      error: null
+    });
+  } catch (err) {
+    console.error('Guest product purchase error:', err);
+    res.redirect('/guest/customer/products');
+  }
+});
+
+router.post('/products/:id/purchase', requireCustomer, async (req, res) => {
+  const customerId = req.session.customer?.id;
+  const { branchId, quantity } = req.body;
+  try {
+    const product = await productModel.getById(req.params.id);
+    if (!product) return res.redirect('/guest/customer/products');
+
+    const branchIdNum = parseInt(branchId);
+    const qty = parseInt(quantity);
+    if (!branchIdNum || !qty || qty < 1) {
+      throw new Error('Please select a branch and quantity.');
+    }
+
+    const employee = await employeeModel.getReceptionistByBranch(branchIdNum)
+      || await employeeModel.getAnyEmployeeByBranch(branchIdNum);
+    if (!employee) {
+      throw new Error('No staff available for the selected branch.');
+    }
+
+    await productModel.purchase({
+      productId: req.params.id,
+      quantity: qty,
+      customerId,
+      branchId: branchIdNum,
+      employeeId: employee.id
+    });
+
+    res.redirect('/guest/customer/receipts');
+  } catch (err) {
+    console.error('Guest product purchase submit error:', err);
+    const product = await productModel.getById(req.params.id);
+    renderCustomerPage(res, 'customer/product-purchase', {
+      title: `Buy ${product?.name || 'Product'}`,
+      product,
+      error: err.message || 'Unable to complete purchase'
     });
   }
 });

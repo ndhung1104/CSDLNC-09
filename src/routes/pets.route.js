@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireRole, requireAnyEmployee } from '../middleware/auth.middleware.js';
 import * as petModel from '../models/pet.model.js';
+import * as checkupModel from '../models/checkup.model.js';
 
 const router = Router();
 
@@ -48,7 +49,8 @@ router.get('/:id', requireAnyEmployee(), async (req, res) => {
     try {
         const pet = await petModel.getById(req.params.id);
         if (!pet) return res.redirect('/pets');
-        res.render('pets/detail', { title: pet.PET_NAME, pet, employee: req.session.employee });
+        const checkups = await checkupModel.getByPetId(req.params.id);
+        res.render('pets/detail', { title: pet.PET_NAME, pet, checkups, employee: req.session.employee });
     } catch (err) {
         res.redirect('/pets');
     }

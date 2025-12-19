@@ -30,13 +30,25 @@
                         <i class="bi bi-receipt me-3"></i> Hóa đơn
                     </a>
                 </li>
-                <li class="nav-item">
+                                <li class="nav-item">
+                    <a class="nav-link <%= title.includes('Appointment') ? 'active' : '' %>" href="/appointments/new">
+                        <i class="bi bi-calendar-plus me-3"></i> Walk-in Appointment
+                    </a>
+                </li>
+<li class="nav-item">
                     <a class="nav-link <%= title.includes('Sản phẩm') || title.includes('Mua') ? 'active' : '' %>"
                         href="/products">
                         <i class="bi bi-box-seam me-3"></i> Sản phẩm
                     </a>
                 </li>
+                                <% if (['VET', 'MGR', 'DIRECTOR'].includes(pos)) { %>
                 <li class="nav-item">
+                    <a class="nav-link <%= title.includes('Medicines') ? 'active' : '' %>" href="/medicines">
+                        <i class="bi bi-capsule me-3"></i> Medicines
+                    </a>
+                </li>
+                <% } %>
+<li class="nav-item">
                     <a class="nav-link <%= title.includes('Gói tiêm phòng') ? 'active' : '' %>"
                         href="/vaccination-plans">
                         <i class="bi bi-shield-check me-3"></i> Gói tiêm phòng

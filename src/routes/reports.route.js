@@ -6,7 +6,7 @@ const router = Router();
 
 // Daily report - MGR and DIRECTOR only
 router.get('/daily', requireRole('MGR', 'DIRECTOR'), async (req, res) => {
-    const { date } = req.query;
+    const { date, branchId } = req.query;
     const emp = req.session.employee;
     let branches = [];
     let report = null;
@@ -14,9 +14,12 @@ router.get('/daily', requireRole('MGR', 'DIRECTOR'), async (req, res) => {
     try {
         branches = await reportModel.getBranches();
 
+        const isAllBranches = branchId === 'all';
+        const selectedBranchId = isAllBranches ? null : (parseInt(branchId) || emp.branchId);
+
         if (date) {
             report = await reportModel.getBranchDailyReport({
-                branchId: emp.branchId,
+                branchId: selectedBranchId,
                 reportDate: date
             });
         }
@@ -29,6 +32,8 @@ router.get('/daily', requireRole('MGR', 'DIRECTOR'), async (req, res) => {
         report,
         branches,
         selectedDate: date || new Date().toISOString().split('T')[0],
+        selectedBranchId: branchId === 'all' ? null : (parseInt(branchId) || emp.branchId),
+        isAllBranches: branchId === 'all',
         error: null,
         employee: emp
     });
@@ -48,7 +53,8 @@ router.post('/daily', requireRole('MGR', 'DIRECTOR'), async (req, res) => {
     console.log('branches:', branches);
     console.log('branches is array:', Array.isArray(branches));
 
-    const selectedBranchId = parseInt(branchId) || emp.branchId;
+    const isAllBranches = branchId === 'all';
+    const selectedBranchId = isAllBranches ? null : (parseInt(branchId) || emp.branchId);
     console.log('selectedBranchId:', selectedBranchId);
 
     try {
@@ -70,6 +76,7 @@ router.post('/daily', requireRole('MGR', 'DIRECTOR'), async (req, res) => {
             availableDates,
             selectedDate: date,
             selectedBranchId,
+            isAllBranches,
             error: null,
             employee: emp
         });
@@ -82,6 +89,7 @@ router.post('/daily', requireRole('MGR', 'DIRECTOR'), async (req, res) => {
             availableDates: [],
             selectedDate: date,
             selectedBranchId,
+            isAllBranches,
             error: err.message,
             employee: emp
         });

@@ -1,0 +1,124 @@
+<% const bp = typeof basePath !== 'undefined' ? basePath : '/customer'; %>
+<section class="py-4 bg-light">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div>
+        <h2 class="mb-0">Buy Product</h2>
+        <p class="text-muted mb-0">Complete your purchase</p>
+      </div>
+      <a href="<%= bp %>/products" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-2"></i>
+        Back to Products
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="py-4">
+  <div class="container">
+    <% if (error) { %>
+      <div class="alert alert-danger"><%= error %></div>
+    <% } %>
+    <% if (!product) { %>
+      <div class="text-center py-5">
+        <i class="bi bi-bag-x text-muted" style="font-size: 4rem;"></i>
+        <p class="text-muted mt-3">Product not found</p>
+      </div>
+    <% } else { %>
+      <div class="row g-4">
+        <div class="col-lg-6">
+          <div class="customer-card card h-100">
+            <div class="card-body">
+              <h4 class="card-title mb-3"><%= product.name %></h4>
+              <p class="text-muted">Product ID: <%= product.id %></p>
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="text-muted">Price</span>
+                <strong class="fs-5"><%= Number(product.price || 0).toLocaleString('vi-VN') %> VND</strong>
+              </div>
+              <hr>
+              <h6 class="mb-2">Available Branches</h6>
+              <ul class="list-unstyled mb-0">
+                <% if (product.stocks && product.stocks.length > 0) { %>
+                  <% product.stocks.forEach((stock) => { %>
+                    <li class="d-flex justify-content-between">
+                      <span><%= stock.branchName %></span>
+                      <span class="<%= stock.quantity > 0 ? 'text-success' : 'text-muted' %>">
+                        <%= stock.quantity %> in stock
+                      </span>
+                    </li>
+                  <% }); %>
+                <% } else { %>
+                  <li class="text-muted">No branch stock available</li>
+                <% } %>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-6">
+          <div class="customer-card card h-100">
+            <div class="card-body">
+              <h5 class="card-title mb-3">Purchase Details</h5>
+              <form method="POST" action="<%= bp %>/products/<%= product.id %>/purchase">
+                <div class="mb-3">
+                  <label class="form-label">Branch <span class="text-danger">*</span></label>
+                  <select class="form-select" name="branchId" id="branchId" required>
+                    <option value="">-- Select branch --</option>
+                    <% if (product.stocks && product.stocks.length > 0) { %>
+                      <% product.stocks.forEach((stock) => { %>
+                        <option
+                          value="<%= stock.branchId %>"
+                          data-stock="<%= stock.quantity %>"
+                          <%= stock.quantity > 0 ? '' : 'disabled' %>
+                        >
+                          <%= stock.branchName %> (Stock: <%= stock.quantity %>)
+                        </option>
+                      <% }); %>
+                    <% } %>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Quantity <span class="text-danger">*</span></label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    name="quantity"
+                    id="quantity"
+                    min="1"
+                    value="1"
+                    required
+                  >
+                  <div class="form-text">Available stock: <span id="stockDisplay">0</span></div>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Place Order</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% } %>
+  </div>
+</section>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const branchSelect = document.getElementById('branchId');
+    const stockDisplay = document.getElementById('stockDisplay');
+    const quantityInput = document.getElementById('quantity');
+    if (!branchSelect || !stockDisplay || !quantityInput) return;
+
+    function updateStock() {
+      const selected = branchSelect.options[branchSelect.selectedIndex];
+      const stock = selected ? selected.getAttribute('data-stock') : 0;
+      stockDisplay.textContent = stock || 0;
+      if (stock && Number(stock) > 0) {
+        quantityInput.max = stock;
+      } else {
+        quantityInput.removeAttribute('max');
+      }
+    }
+
+    branchSelect.addEventListener('change', updateStock);
+    updateStock();
+  });
+</script>

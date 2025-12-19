@@ -54,6 +54,42 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="card mt-4">
+                            <div class="card-header">Checkup History</div>
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Date</th>
+                                            <th>Vet</th>
+                                            <th>Status</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <% if (typeof checkups !== 'undefined' && checkups && checkups.length > 0) { %>
+                                            <% checkups.forEach(c => { %>
+                                                <tr>
+                                                    <td><%= c.id %></td>
+                                                    <td><%= c.date ? new Date(c.date).toLocaleDateString('vi-VN') : '-' %></td>
+                                                    <td><%= c.vetName || '-' %></td>
+                                                    <td><%= c.status || '-' %></td>
+                                                    <td>
+                                                        <a href="/checkups/<%= c.id %>" class="btn btn-sm btn-outline-primary">Details</a>
+                                                    </td>
+                                                </tr>
+                                            <% }) %>
+                                        <% } else { %>
+                                            <tr>
+                                                <td colspan="5" class="text-center text-muted py-3">No checkups</td>
+                                            </tr>
+                                        <% } %>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </main>
             </div>
     </div>

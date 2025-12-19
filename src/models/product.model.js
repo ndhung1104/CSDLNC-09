@@ -45,6 +45,56 @@ export async function getAll({ search = '', branchId = null, page = 1, limit = 2
     return { products, total: total?.count || 0, page, limit };
 }
 
+// Get medicines with optional search (avoid hard-coded PRODUCT_ID ranges)
+export async function getMedicines({ search = '', branchId = null, page = 1, limit = 20 } = {}) {
+    const offset = (page - 1) * limit;
+    const medicineFilter = function () {
+        this.whereRaw('PRODUCT.PRODUCT_NAME COLLATE Latin1_General_CI_AI LIKE ?', ['Thuoc%'])
+            .orWhereIn('PRODUCT.PRODUCT_ID', db('PRESCRIPTION_DETAIL').select('PRODUCT_ID'));
+    };
+
+    let countQuery = db('SALES_PRODUCT')
+        .join('PRODUCT', 'SALES_PRODUCT.SALES_PRODUCT_ID', 'PRODUCT.PRODUCT_ID')
+        .where(medicineFilter);
+
+    let dataQuery = db('SALES_PRODUCT')
+        .join('PRODUCT', 'SALES_PRODUCT.SALES_PRODUCT_ID', 'PRODUCT.PRODUCT_ID')
+        .select(
+            'SALES_PRODUCT.SALES_PRODUCT_ID as id',
+            'PRODUCT.PRODUCT_NAME as name',
+            'SALES_PRODUCT.SALES_PRODUCT_PRICE as price'
+        )
+        .where(medicineFilter);
+
+    if (search) {
+        const searchCondition = function () {
+            this.where('PRODUCT.PRODUCT_NAME', 'like', `%${search}%`);
+        };
+        countQuery = countQuery.where(searchCondition);
+        dataQuery = dataQuery.where(searchCondition);
+    }
+
+    const total = await countQuery.count('* as count').first();
+    const products = await dataQuery
+        .orderBy('SALES_PRODUCT.SALES_PRODUCT_ID', 'asc')
+        .offset(offset)
+        .limit(limit);
+
+    if (branchId && products.length > 0) {
+        const productIds = products.map(p => p.id);
+        const stocks = await db('BRANCH_STOCK')
+            .select('SALES_PRODUCT_ID', 'QUANTITY')
+            .where('BRANCH_ID', branchId)
+            .whereIn('SALES_PRODUCT_ID', productIds);
+
+        const stockMap = {};
+        stocks.forEach(s => stockMap[s.SALES_PRODUCT_ID] = s.QUANTITY);
+        products.forEach(p => p.stock = stockMap[p.id] || 0);
+    }
+
+    return { products, total: total?.count || 0, page, limit };
+}
+
 // Get product by ID with stock at all branches
 export async function getById(id) {
     const product = await db('SALES_PRODUCT')

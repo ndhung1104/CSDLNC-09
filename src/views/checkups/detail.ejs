@@ -14,13 +14,23 @@
                         <h1 class="h3 mb-4">
                             <%= title %>
                         </h1>
+                        <% if (error) { %>
+                            <div class="alert alert-danger">
+                                <%= error %>
+                            </div>
+                        <% } %>
+                        <% if (success) { %>
+                            <div class="alert alert-success">
+                                <%= success %>
+                            </div>
+                        <% } %>
                         <div class="row g-4">
                             <div class="col-md-6">
                                 <div class="card">
                                     <div class="card-header">Thông tin phiếu khám</div>
                                     <div class="card-body">
                                         <p><strong>Ngày khám:</strong>
-                                            <%= new Date(checkup.CHECK_UP_DATE).toLocaleDateString('vi-VN') %>
+                                            <% const visitDate = checkup.CHECK_UP_DATE || checkup.FOLLOW_UP_VISIT; %><%= visitDate ? new Date(visitDate).toLocaleDateString('vi-VN') : '-' %>
                                         </p>
                                         <p><strong>Chi nhánh:</strong>
                                             <%= checkup.branchName %>
@@ -35,7 +45,10 @@
                                                 <%= checkup.customerName %>
                                             </a></p>
                                         <p><strong>Trạng thái:</strong> <span
-                                                class="badge bg-<%= checkup.STATUS === 'Hoàn thành' ? 'success' : 'warning' %>">
+                                                <% const statusText = checkup.STATUS || ''; %>
+<% const normalizedStatus = statusText.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); %>
+<% const isCompleted = normalizedStatus.includes('hoan') || normalizedStatus.includes('complete'); %>
+class="badge bg-<%= isCompleted ? 'success' : 'warning' %>">
                                                 <%= checkup.STATUS %>
                                             </span></p>
                                     </div>
@@ -45,33 +58,139 @@
                                 <div class="card">
                                     <div class="card-header">Ghi chú & Cập nhật</div>
                                     <div class="card-body">
-                                        <form method="POST" action="/checkups/<%= checkup.CHECK_UP_ID %>/update">
+                                                                                <form method="POST" action="/checkups/<%= checkup.CHECK_UP_ID %>/update">
                                             <div class="mb-3">
-                                                <label class="form-label">Ghi chú / Chẩn đoán</label>
-                                                <textarea class="form-control" name="note"
-                                                    rows="4"><%= checkup.CHECK_UP_NOTE || '' %></textarea>
+                                                <label class="form-label">Symptoms</label>
+                                                <textarea class="form-control" name="symptoms" rows="3"><%= checkup.SYMPTOMS || '' %></textarea>
                                             </div>
                                             <div class="mb-3">
-                                                <label class="form-label">Trạng thái</label>
+                                                <label class="form-label">Diagnosis</label>
+                                                <textarea class="form-control" name="diagnosis" rows="3"><%= checkup.DIAGNOSIS || '' %></textarea>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Follow-up</label>
+                                                <input type="datetime-local" class="form-control" name="followUpVisit" value="<%= checkup.FOLLOW_UP_VISIT ? new Date(checkup.FOLLOW_UP_VISIT).toISOString().slice(0, 16) : '' %>">
+                                            </div>
+                                                                                                                                    <div class="mb-3">
+                                                <label class="form-label">Status</label>
                                                 <select class="form-select" name="status">
-                                                    <option value="Chờ" <%=checkup.STATUS==='Chờ' ? 'selected' : '' %>
-                                                        >Chờ</option>
-                                                    <option value="Đang khám" <%=checkup.STATUS==='Đang khám'
-                                                        ? 'selected' : '' %>>Đang khám</option>
-                                                    <option value="Hoàn thành" <%=checkup.STATUS==='Hoàn thành'
-                                                        ? 'selected' : '' %>>Hoàn thành</option>
+                                                    <% if (checkup.STATUS) { %>
+                                                        <option value="<%= checkup.STATUS %>" selected><%= checkup.STATUS %></option>
+                                                    <% } %>
+                                                    <option value="Pending">Pending</option>
+                                                    <option value="In Progress">In progress</option>
+                                                    <option value="Completed">Completed</option>
                                                 </select>
                                             </div>
-                                            <button type="submit" class="btn btn-primary">Cập nhật</button>
+                                            <button type="submit" class="btn btn-primary">Update</button>
                                         </form>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </main>
+                                            <div class="card mt-4">
+                            <div class="card-header">Prescription</div>
+                            <div class="card-body">
+                                <% if (prescriptionItems && prescriptionItems.length > 0) { %>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th>Medicine</th>
+                                                    <th>Quantity</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <% prescriptionItems.forEach(item => { %>
+                                                    <tr>
+                                                        <td><%= item.number %></td>
+                                                        <td><%= item.productName %></td>
+                                                        <td><%= item.quantity %></td>
+                                                    </tr>
+                                                <% }) %>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                <% } else { %>
+                                    <p class="text-muted">No prescription items.</p>
+                                <% } %>
+
+                                <% if (employee && ['VET', 'MGR', 'DIRECTOR'].includes(employee.position)) { %>
+                                    <% if (medicines && medicines.length > 0) { %>
+                                        <form method="POST" action="/checkups/<%= checkup.CHECK_UP_ID %>/prescription">
+                                            <div id="prescriptionRows">
+                                                <% const rows = (prescriptionItems && prescriptionItems.length > 0) ? prescriptionItems : [{ productId: '', quantity: 1 }]; %>
+                                                <% rows.forEach((row) => { %>
+                                                    <div class="row g-2 align-items-end prescription-row mb-2">
+                                                        <div class="col-md-7">
+                                                            <label class="form-label">Medicine</label>
+                                                            <select class="form-select" name="medicineId" required>
+                                                                <option value="">-- Select medicine --</option>
+                                                                <% medicines.forEach(m => { %>
+                                                                    <option value="<%= m.id %>" <%= String(m.id) === String(row.productId) ? 'selected' : '' %>><%= m.name %></option>
+                                                                <% }) %>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Qty</label>
+                                                            <input type="number" class="form-control" name="quantity" min="1" value="<%= row.quantity || 1 %>" required>
+                                                        </div>
+                                                        <div class="col-md-2">
+                                                            <button type="button" class="btn btn-outline-danger btn-sm remove-prescription-row">Remove</button>
+                                                        </div>
+                                                    </div>
+                                                <% }) %>
+                                            </div>
+                                            <div class="d-flex gap-2">
+                                                <button type="button" class="btn btn-outline-secondary btn-sm" id="addPrescriptionRow">Add item</button>
+                                                <button type="submit" class="btn btn-primary btn-sm">Save Prescription</button>
+                                            </div>
+                                        </form>
+                                    <% } else { %>
+                                        <p class="text-muted">No medicines available.</p>
+                                    <% } %>
+                                <% } %>
+                            </div>
+                        </div>
+
+</main>
             </div>
     </div>
     <%- include('../partials/common/scripts') %>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const rows = document.getElementById('prescriptionRows');
+            const addBtn = document.getElementById('addPrescriptionRow');
+            if (!rows || !addBtn) return;
+
+            addBtn.addEventListener('click', function () {
+                const template = rows.querySelector('.prescription-row');
+                if (!template) return;
+                const clone = template.cloneNode(true);
+                const select = clone.querySelector('select[name=\"medicineId\"]');
+                const qty = clone.querySelector('input[name=\"quantity\"]');
+                if (select) select.value = '';
+                if (qty) qty.value = 1;
+                rows.appendChild(clone);
+            });
+
+            rows.addEventListener('click', function (event) {
+                if (!event.target.classList.contains('remove-prescription-row')) return;
+                const row = event.target.closest('.prescription-row');
+                if (!row) return;
+                const allRows = rows.querySelectorAll('.prescription-row');
+                if (allRows.length <= 1) {
+                    const select = row.querySelector('select[name=\"medicineId\"]');
+                    const qty = row.querySelector('input[name=\"quantity\"]');
+                    if (select) select.value = '';
+                    if (qty) qty.value = 1;
+                    return;
+                }
+                row.remove();
+            });
+        });
+    </script>
 </body>
 
 </html>

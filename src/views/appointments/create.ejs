@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include('../partials/common/head') %>
+    <link rel="stylesheet" href="/css/management-styles.css">
+  </head>
+  <body>
+    <div class="app-wrapper">
+      <%- include('../partials/management/navbar') %>
+      <div class="d-flex flex-grow-1">
+        <%- include('../partials/management/sidebar') %>
+        <main class="flex-grow-1 p-4">
+          <h1 class="h3 mb-4"><%= title %></h1>
+          <% if (error) { %>
+            <div class="alert alert-danger"><%= error %></div>
+          <% } %>
+          <% if (success) { %>
+            <div class="alert alert-success"><%= success %></div>
+          <% } %>
+
+          <div class="card">
+            <div class="card-body">
+              <form method="POST" action="/appointments">
+                <div class="row g-3">
+                  <div class="col-md-6 position-relative">
+                    <label class="form-label">Customer <span class="text-danger">*</span></label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="customerSearch"
+                      placeholder="Search by name, phone, or email..."
+                      autocomplete="off"
+                    >
+                    <input type="hidden" name="customerId" id="customerId" required>
+                    <div
+                      id="customerResults"
+                      class="list-group position-absolute w-100 shadow mt-1"
+                      style="z-index: 1000; display: none; max-height: 200px; overflow-y: auto;"
+                    ></div>
+                    <div id="selectedCustomerInfo" class="form-text text-success" style="display: none;">
+                      <i class="bi bi-check-circle me-1"></i>
+                      Selected: <span id="customerNameDisplay"></span>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label">Branch <span class="text-danger">*</span></label>
+                    <select class="form-select" id="branchId" name="branchId" required>
+                      <option value="">-- Select branch --</option>
+                      <% (branches || []).forEach(b => { %>
+                        <option value="<%= b.id %>" <%= String(selectedBranchId) === String(b.id) ? 'selected' : '' %>>
+                          <%= b.name %>
+                        </option>
+                      <% }) %>
+                    </select>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label">Service <span class="text-danger">*</span></label>
+                    <select class="form-select" id="serviceId" name="serviceId" required>
+                      <% if (services && services.length > 0) { %>
+                        <% services.forEach(s => { %>
+                          <option value="<%= s.serviceId %>"><%= s.serviceName %></option>
+                        <% }) %>
+                      <% } else { %>
+                        <option value="">No services available</option>
+                      <% } %>
+                    </select>
+                  </div>
+
+                  <div class="col-md-3">
+                    <label class="form-label">Date <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control" name="appointmentDate" required>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label">Time <span class="text-danger">*</span></label>
+                    <input type="time" class="form-control" name="appointmentTime" required>
+                  </div>
+                </div>
+
+                <div class="mt-4">
+                  <button type="submit" class="btn btn-primary">Create Appointment</button>
+                  <a href="/appointments/new" class="btn btn-outline-secondary ms-2">Reset</a>
+                </div>
+              </form>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <%- include('../partials/common/scripts') %>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        const searchInput = document.getElementById('customerSearch');
+        const resultsDiv = document.getElementById('customerResults');
+        const hiddenInput = document.getElementById('customerId');
+        const selectedInfo = document.getElementById('selectedCustomerInfo');
+        const nameDisplay = document.getElementById('customerNameDisplay');
+        const branchSelect = document.getElementById('branchId');
+        const serviceSelect = document.getElementById('serviceId');
+        const branchServices = <%- JSON.stringify(branchServices || {}) %>;
+        let debounceTimer;
+
+        function renderServices(branchId) {
+          const services = branchServices[branchId] || [];
+          serviceSelect.innerHTML = '';
+          if (services.length === 0) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = 'No services available';
+            serviceSelect.appendChild(opt);
+            return;
+          }
+          services.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.serviceId;
+            opt.textContent = s.serviceName;
+            serviceSelect.appendChild(opt);
+          });
+        }
+
+        branchSelect.addEventListener('change', function () {
+          renderServices(this.value);
+        });
+
+        searchInput.addEventListener('input', function () {
+          const query = this.value.trim();
+          if (query.length < 2) {
+            resultsDiv.style.display = 'none';
+            return;
+          }
+
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            fetch(`/api/customers?q=${encodeURIComponent(query)}`)
+              .then(res => res.json())
+              .then(data => {
+                resultsDiv.innerHTML = '';
+                if (data.length === 0) {
+                  const item = document.createElement('div');
+                  item.className = 'list-group-item text-muted';
+                  item.textContent = 'No customers found';
+                  resultsDiv.appendChild(item);
+                } else {
+                  data.forEach(c => {
+                    const item = document.createElement('a');
+                    item.className = 'list-group-item list-group-item-action';
+                    item.href = '#';
+                    item.innerHTML = `<div><strong>${c.name}</strong></div><small class="text-muted">${c.phone || c.email || ''}</small>`;
+                    item.addEventListener('click', (e) => {
+                      e.preventDefault();
+                      searchInput.value = c.name;
+                      hiddenInput.value = c.id;
+                      nameDisplay.textContent = `${c.name} (${c.phone || c.email || ''})`;
+                      selectedInfo.style.display = 'block';
+                      resultsDiv.style.display = 'none';
+                    });
+                    resultsDiv.appendChild(item);
+                  });
+                }
+                resultsDiv.style.display = 'block';
+              });
+          }, 300);
+        });
+
+        document.addEventListener('click', function (e) {
+          if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
+            resultsDiv.style.display = 'none';
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

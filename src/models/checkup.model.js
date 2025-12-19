@@ -74,9 +74,11 @@ export async function create({ petId, vetId, medicalServiceId = 1 }) {
 }
 
 // Update checkup notes using stored procedure
-export async function updateNotes({ checkupId, symptoms, diagnosis, status }) {
-    await db.raw(`EXEC dbo.uspCheckUpUpdateNotes @CheckUpId = ?, @Symptoms = ?, @Diagnosis = ?, @Status = ?`,
-        [checkupId, symptoms, diagnosis, status]);
+export async function updateNotes({ checkupId, symptoms, diagnosis, followUpVisit, status }) {
+    await db.raw(
+        `EXEC dbo.uspCheckUpUpdateNotes @CheckUpId = ?, @Symptoms = ?, @Diagnosis = ?, @FollowUpVisit = ?, @Status = ?`,
+        [checkupId, symptoms, diagnosis, followUpVisit, status]
+    );
 }
 
 // Get vets for dropdown
@@ -118,4 +120,69 @@ export async function getByCustomerId(customerId) {
         )
         .where('cu.CUSTOMER_ID', customerId)
         .orderBy('c.CHECK_UP_ID', 'desc');
+}
+
+// Get checkups for a specific pet
+export async function getByPetId(petId) {
+    return db('CHECK_UP as c')
+        .join('PET as p', 'c.PET_ID', 'p.PET_ID')
+        .join('CUSTOMER as cu', 'p.CUSTOMER_ID', 'cu.CUSTOMER_ID')
+        .leftJoin('EMPLOYEE as e', 'c.VET_ID', 'e.EMPLOYEE_ID')
+        .select(
+            'c.CHECK_UP_ID as id',
+            'c.STATUS as status',
+            'c.SYMPTOMS as symptoms',
+            'c.DIAGNOSIS as diagnosis',
+            'c.FOLLOW_UP_VISIT as date',
+            'p.PET_NAME as petName',
+            'cu.CUSTOMER_NAME as customerName',
+            'cu.CUSTOMER_ID as customerId',
+            'e.EMPLOYEE_NAME as vetName'
+        )
+        .where('c.PET_ID', petId)
+        .orderBy('c.CHECK_UP_ID', 'desc');
+}
+
+export async function getPrescriptionItems(checkupId) {
+    return db('PRESCRIPTION_DETAIL as pd')
+        .join('PRODUCT as p', 'pd.PRODUCT_ID', 'p.PRODUCT_ID')
+        .leftJoin('SALES_PRODUCT as sp', 'pd.PRODUCT_ID', 'sp.SALES_PRODUCT_ID')
+        .select(
+            'pd.PRESCRIPTION_NUMBER as number',
+            'pd.PRODUCT_ID as productId',
+            'p.PRODUCT_NAME as productName',
+            'pd.QUANTITY as quantity',
+            'sp.SALES_PRODUCT_PRICE as price'
+        )
+        .where('pd.CHECK_UP_ID', checkupId)
+        .orderBy('pd.PRESCRIPTION_NUMBER', 'asc');
+}
+
+export async function replacePrescriptionItems({ checkupId, items }) {
+    return db.transaction(async trx => {
+        const exists = await trx('CHECK_UP')
+            .where('CHECK_UP_ID', checkupId)
+            .first();
+        if (!exists) {
+            throw new Error('Check up not found.');
+        }
+
+        await trx('PRESCRIPTION_DETAIL')
+            .where('CHECK_UP_ID', checkupId)
+            .del();
+
+        if (items && items.length > 0) {
+            const rows = items.map((item, idx) => ({
+                CHECK_UP_ID: checkupId,
+                PRESCRIPTION_NUMBER: idx + 1,
+                PRODUCT_ID: item.productId,
+                QUANTITY: item.quantity
+            }));
+            await trx('PRESCRIPTION_DETAIL').insert(rows);
+        }
+
+        await trx('CHECK_UP')
+            .where('CHECK_UP_ID', checkupId)
+            .update({ PRESCRIPTION_AVAILABLE: items && items.length > 0 ? 1 : 0 });
+    });
 }
