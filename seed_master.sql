@@ -242,6 +242,29 @@ JOIN EMPLOYEE E
 GO
 
 /* ==========================================
+   12.5 VET_SCHEDULE (basic weekly schedule)
+   ========================================== */
+INSERT INTO VET_SCHEDULE (
+    VET_ID,
+    BRANCH_ID,
+    DAY_OF_WEEK,
+    START_TIME,
+    END_TIME,
+    SLOT_MINUTES
+)
+SELECT
+    E.EMPLOYEE_ID,
+    E.BRANCH_ID,
+    D.DAY_OF_WEEK,
+    '08:00',
+    '12:00',
+    30
+FROM EMPLOYEE E
+CROSS JOIN (VALUES (1),(2),(3),(4),(5),(6)) D(DAY_OF_WEEK)
+WHERE E.EMPLOYEE_POSITION = 'VET';
+GO
+
+/* ==========================================
    13. BRANCH_SERVICE (mỗi chi nhánh đều có full service)
    ========================================== */
 INSERT INTO BRANCH_SERVICE (BRANCH_ID, SERVICE_ID)
