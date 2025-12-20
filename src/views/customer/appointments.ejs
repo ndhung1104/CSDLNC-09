@@ -70,6 +70,10 @@
                       <%= appointment.branchName %>
                     </div>
                     <div class="mb-2">
+                      <i class="bi bi-person-badge text-muted me-2"></i>
+                      <%= appointment.vetName || '-' %>
+                    </div>
+                    <div class="mb-2">
                       <i class="bi bi-heart text-muted me-2"></i>
                       <%= appointment.petName %>
                     </div>
@@ -115,6 +119,10 @@
                       <i class="bi bi-geo-alt text-muted me-2"></i>
                       <%= appointment.branchName %>
                     </div>
+                    <div class="mb-2">
+                      <i class="bi bi-person-badge text-muted me-2"></i>
+                      <%= appointment.vetName || '-' %>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -146,6 +154,10 @@
                     <div class="mb-2">
                       <i class="bi bi-calendar text-muted me-2"></i>
                       <strong><%= new Date(appointment.appointmentDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></strong>
+                    </div>
+                    <div class="mb-2">
+                      <i class="bi bi-person-badge text-muted me-2"></i>
+                      <%= appointment.vetName || '-' %>
                     </div>
                   </div>
                 </div>

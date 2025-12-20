@@ -41,7 +41,7 @@ router.get('/new', requireRole('RECEP', 'SALES', 'MGR', 'DIRECTOR'), async (req,
 
 // Create appointment
 router.post('/', requireRole('RECEP', 'SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
-    const { customerId, branchId, serviceId, appointmentDate, appointmentTime } = req.body;
+    const { customerId, branchId, serviceId, appointmentDate, appointmentTime, vetId } = req.body;
     const emp = req.session.employee;
     try {
         if (!customerId || !branchId || !serviceId || !appointmentDate || !appointmentTime) {
@@ -53,6 +53,18 @@ router.post('/', requireRole('RECEP', 'SALES', 'MGR', 'DIRECTOR'), async (req, r
             throw new Error('Selected service is not available at this branch.');
         }
 
+        const availableVets = await appointmentModel.getAvailableVets({ branchId, appointmentDate, appointmentTime });
+        let selectedVetId = vetId ? parseInt(vetId, 10) : null;
+        if (selectedVetId) {
+            const isValidVet = availableVets.some(v => String(v.vetId) === String(selectedVetId));
+            if (!isValidVet) throw new Error('Selected vet is not available for this time slot.');
+        } else {
+            selectedVetId = availableVets[0]?.vetId || null;
+        }
+        if (!selectedVetId) {
+            throw new Error('No vets available for this time slot.');
+        }
+
         const dateTimeString = `${appointmentDate}T${appointmentTime}:00`;
         const apptDate = new Date(dateTimeString);
 
@@ -60,6 +72,7 @@ router.post('/', requireRole('RECEP', 'SALES', 'MGR', 'DIRECTOR'), async (req, r
             customerId,
             branchId,
             serviceId,
+            vetId: selectedVetId,
             appointmentDate: apptDate,
             status: 'Pending'
         });

@@ -68,6 +68,14 @@
                     </select>
                   </div>
 
+                  <div class="col-md-6">
+                    <label class="form-label">Vet</label>
+                    <select class="form-select" id="vetId" name="vetId">
+                      <option value="">Auto-assign vet</option>
+                    </select>
+                    <div id="vetHelp" class="form-text text-muted">Select branch, date, and time to load available vets.</div>
+                  </div>
+
                   <div class="col-md-3">
                     <label class="form-label">Date <span class="text-danger">*</span></label>
                     <input type="date" class="form-control" name="appointmentDate" required>
@@ -99,8 +107,55 @@
         const nameDisplay = document.getElementById('customerNameDisplay');
         const branchSelect = document.getElementById('branchId');
         const serviceSelect = document.getElementById('serviceId');
+        const vetSelect = document.getElementById('vetId');
+        const vetHelp = document.getElementById('vetHelp');
+        const dateInput = document.querySelector('input[name="appointmentDate"]');
+        const timeInput = document.querySelector('input[name="appointmentTime"]');
         const branchServices = <%- JSON.stringify(branchServices || {}) %>;
         let debounceTimer;
+
+        function renderVets(vets, message) {
+          vetSelect.innerHTML = '';
+          const autoOpt = document.createElement('option');
+          autoOpt.value = '';
+          autoOpt.textContent = 'Auto-assign vet';
+          vetSelect.appendChild(autoOpt);
+
+          if (!vets || vets.length === 0) {
+            vetSelect.disabled = true;
+            vetHelp.textContent = message || 'No vets available for this slot.';
+            return;
+          }
+
+          vets.forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v.vetId;
+            opt.textContent = v.vetName;
+            vetSelect.appendChild(opt);
+          });
+          vetSelect.disabled = false;
+          vetHelp.textContent = 'Select a vet or leave auto-assign.';
+        }
+
+        function loadVets() {
+          if (!branchSelect.value || !dateInput.value || !timeInput.value) {
+            renderVets([], 'Select branch, date, and time to load available vets.');
+            return;
+          }
+
+          const params = new URLSearchParams({
+            branchId: branchSelect.value,
+            appointmentDate: dateInput.value,
+            appointmentTime: timeInput.value
+          });
+
+          fetch(`/api/vets/available?${params.toString()}`)
+            .then(res => res.json())
+            .then(data => renderVets(data))
+            .catch(() => {
+              renderVets([], 'Unable to load vets.');
+            });
+        }
 
         function renderServices(branchId) {
           const services = branchServices[branchId] || [];
@@ -122,7 +177,14 @@
 
         branchSelect.addEventListener('change', function () {
           renderServices(this.value);
+          loadVets();
         });
+        if (dateInput) {
+          dateInput.addEventListener('change', loadVets);
+        }
+        if (timeInput) {
+          timeInput.addEventListener('change', loadVets);
+        }
 
         searchInput.addEventListener('input', function () {
           const query = this.value.trim();
@@ -169,6 +231,8 @@
             resultsDiv.style.display = 'none';
           }
         });
+
+        loadVets();
       });
     </script>
   </body>

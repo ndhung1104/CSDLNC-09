@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireRole } from '../middleware/auth.middleware.js';
 import db from '../utils/db.js';
+import * as appointmentModel from '../models/appointment.model.js';
 
 const router = Router();
 
@@ -45,6 +46,20 @@ router.get('/pets', requireRole('RECEP', 'SALES', 'MGR', 'DIRECTOR', 'VET'), asy
             .limit(20);
 
         res.json(pets);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Available vets for a branch/time slot
+router.get('/vets/available', requireRole('RECEP', 'SALES', 'MGR', 'DIRECTOR'), async (req, res) => {
+    const { branchId, appointmentDate, appointmentTime } = req.query;
+    if (!branchId || !appointmentDate || !appointmentTime) return res.json([]);
+
+    try {
+        const vets = await appointmentModel.getAvailableVets({ branchId, appointmentDate, appointmentTime });
+        res.json(vets);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Internal server error' });

@@ -94,6 +94,7 @@ router.get('/dashboard', requireCustomer, async (req, res) => {
         appointmentDate: a.date,
         appointmentTime: a.date ? new Date(a.date).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '',
         branchName: a.branchName,
+        vetName: a.vetName || '',
         petName: '',
         status: a.status,
       })),
@@ -140,6 +141,7 @@ router.get('/appointments', requireCustomer, async (req, res) => {
         appointmentDate: a.date,
         appointmentTime: a.date ? new Date(a.date).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '',
         branchName: a.branchName,
+        vetName: a.vetName || '',
         petName: '',
         notes: '',
       };
@@ -157,6 +159,7 @@ router.get('/appointments', requireCustomer, async (req, res) => {
         appointmentDate: c.date,
         appointmentTime: c.date ? new Date(c.date).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '',
         branchName: c.branchName || '',
+        vetName: c.vetName || '',
         petName: c.petName,
         notes: c.diagnosis || '',
       };
@@ -180,6 +183,19 @@ router.get('/appointments', requireCustomer, async (req, res) => {
       cancelledAppointments: [],
       error: 'Unable to load appointments',
     });
+  }
+});
+
+router.get('/appointments/available-vets', requireCustomer, async (req, res) => {
+  const { branchId, appointmentDate, appointmentTime } = req.query;
+  if (!branchId || !appointmentDate || !appointmentTime) return res.json([]);
+
+  try {
+    const vets = await appointmentModel.getAvailableVets({ branchId, appointmentDate, appointmentTime });
+    res.json(vets);
+  } catch (err) {
+    console.error('Guest available vets error:', err);
+    res.status(500).json({ error: 'Unable to load vets' });
   }
 });
 
@@ -215,7 +231,7 @@ router.get('/appointments/new', requireCustomer, async (req, res) => {
 // Create appointment
 router.post('/appointments', requireCustomer, async (req, res) => {
   const customerId = req.session.customer?.id;
-  const { branchId, serviceId, appointmentDate, appointmentTime, notes } = req.body;
+  const { branchId, serviceId, appointmentDate, appointmentTime, notes, vetId } = req.body;
 
   try {
     if (!branchId || !serviceId || !appointmentDate || !appointmentTime) {
@@ -227,6 +243,18 @@ router.post('/appointments', requireCustomer, async (req, res) => {
       throw new Error('Selected service is not available at this branch. Please choose another branch/service.');
     }
 
+    const availableVets = await appointmentModel.getAvailableVets({ branchId, appointmentDate, appointmentTime });
+    let selectedVetId = vetId ? parseInt(vetId, 10) : null;
+    if (selectedVetId) {
+      const isValidVet = availableVets.some(v => String(v.vetId) === String(selectedVetId));
+      if (!isValidVet) throw new Error('Selected vet is not available for this time slot.');
+    } else {
+      selectedVetId = availableVets[0]?.vetId || null;
+    }
+    if (!selectedVetId) {
+      throw new Error('No vets available for this time slot.');
+    }
+
     const dateTimeString = `${appointmentDate}T${appointmentTime}:00`;
     const apptDate = new Date(dateTimeString);
 
@@ -234,6 +262,7 @@ router.post('/appointments', requireCustomer, async (req, res) => {
       customerId,
       branchId,
       serviceId,
+      vetId: selectedVetId,
       appointmentDate: apptDate,
       status: 'Pending',
     });
@@ -285,7 +314,7 @@ router.get('/appointments/:id/edit', requireCustomer, async (req, res) => {
 // Update appointment
 router.post('/appointments/:id', requireCustomer, async (req, res) => {
   const customerId = req.session.customer?.id;
-  const { branchId, serviceId, appointmentDate, appointmentTime, status } = req.body;
+  const { branchId, serviceId, appointmentDate, appointmentTime, status, vetId } = req.body;
   const appointmentId = req.params.id;
 
   try {
@@ -298,6 +327,23 @@ router.post('/appointments/:id', requireCustomer, async (req, res) => {
       throw new Error('Selected service is not available at this branch. Please choose another branch/service.');
     }
 
+    const availableVets = await appointmentModel.getAvailableVets({
+      branchId,
+      appointmentDate,
+      appointmentTime,
+      excludeAppointmentId: appointmentId
+    });
+    let selectedVetId = vetId ? parseInt(vetId, 10) : null;
+    if (selectedVetId) {
+      const isValidVet = availableVets.some(v => String(v.vetId) === String(selectedVetId));
+      if (!isValidVet) throw new Error('Selected vet is not available for this time slot.');
+    } else {
+      selectedVetId = availableVets[0]?.vetId || null;
+    }
+    if (!selectedVetId) {
+      throw new Error('No vets available for this time slot.');
+    }
+
     const dateTimeString = `${appointmentDate}T${appointmentTime}:00`;
     const apptDate = new Date(dateTimeString);
 
@@ -306,6 +352,7 @@ router.post('/appointments/:id', requireCustomer, async (req, res) => {
       customerId,
       branchId,
       serviceId,
+      vetId: selectedVetId,
       appointmentDate: apptDate,
       status: status || 'Pending',
     });

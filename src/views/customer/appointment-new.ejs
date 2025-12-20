@@ -12,6 +12,9 @@
       <div class="col-lg-8">
         <div class="customer-card card">
           <div class="card-body p-4">
+            <% if (typeof error !== 'undefined' && error) { %>
+              <div class="alert alert-danger"><%= error %></div>
+            <% } %>
             <form action="<%= appointment ? (bp + '/appointments/' + appointment.id) : (bp + '/appointments') %>" method="POST" id="appointmentForm">
               <div class="mb-4">
                 <h5 class="mb-3">1. Select Your Pet</h5>
@@ -98,7 +101,18 @@
               <hr>
 
               <div class="mb-4">
-                <h5 class="mb-3">5. Additional Information (Optional)</h5>
+                <h5 class="mb-3">5. Select Vet</h5>
+                <label for="vetId" class="form-label">Vet</label>
+                <select class="form-select" id="vetId" name="vetId">
+                  <option value="">Auto-assign vet</option>
+                </select>
+                <div id="vetHelp" class="form-text text-muted">Select branch, date, and time to load available vets.</div>
+              </div>
+
+              <hr>
+
+              <div class="mb-4">
+                <h5 class="mb-3">6. Additional Information (Optional)</h5>
                 <label for="notes" class="form-label">Notes or Special Requests</label>
                 <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Any specific concerns or requests..."></textarea>
               </div>
@@ -122,9 +136,14 @@
   (function() {
     const serviceSelect = document.getElementById('serviceId');
     const branchSelect = document.getElementById('branchId');
+    const vetSelect = document.getElementById('vetId');
+    const vetHelp = document.getElementById('vetHelp');
+    const dateInput = document.getElementById('appointmentDate');
+    const timeSelect = document.getElementById('appointmentTime');
     const servicesByBranch = <%- JSON.stringify(branchServices || {}) %>;
     const preselectedBranch = '<%= appointment ? appointment.branchId : '' %>';
     const preselectedService = '<%= appointment ? appointment.serviceId : '' %>';
+    const preselectedVet = '<%= appointment ? appointment.vetId : '' %>';
 
     function renderServices(branchId) {
       while (serviceSelect.firstChild) {
@@ -147,9 +166,54 @@
       }
     }
 
+    function renderVets(vets, message) {
+      vetSelect.innerHTML = '';
+      const autoOpt = document.createElement('option');
+      autoOpt.value = '';
+      autoOpt.textContent = 'Auto-assign vet';
+      vetSelect.appendChild(autoOpt);
+
+      if (!vets || vets.length === 0) {
+        vetSelect.disabled = true;
+        vetHelp.textContent = message || 'No vets available for this slot.';
+        return;
+      }
+
+      vets.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.vetId;
+        opt.textContent = v.vetName;
+        vetSelect.appendChild(opt);
+      });
+      vetSelect.disabled = false;
+      vetHelp.textContent = 'Select a vet or leave auto-assign.';
+      if (preselectedVet) {
+        vetSelect.value = preselectedVet;
+      }
+    }
+
+    function loadVets() {
+      if (!branchSelect.value || !dateInput.value || !timeSelect.value) {
+        renderVets([], 'Select branch, date, and time to load available vets.');
+        return;
+      }
+
+      const params = new URLSearchParams({
+        branchId: branchSelect.value,
+        appointmentDate: dateInput.value,
+        appointmentTime: timeSelect.value
+      });
+
+      fetch(`${bp}/appointments/available-vets?${params.toString()}`)
+        .then(res => res.json())
+        .then(data => renderVets(data))
+        .catch(() => renderVets([], 'Unable to load vets.'));
+    }
+
     if (branchSelect) {
       branchSelect.addEventListener('change', function() {
         renderServices(this.value);
+        loadVets();
       });
       const initialBranch = preselectedBranch || (branchSelect.options.length > 1 ? branchSelect.options[1].value : '');
       if (initialBranch) {
@@ -157,5 +221,14 @@
         renderServices(initialBranch);
       }
     }
+
+    if (dateInput) {
+      dateInput.addEventListener('change', loadVets);
+    }
+    if (timeSelect) {
+      timeSelect.addEventListener('change', loadVets);
+    }
+
+    loadVets();
   })();
 </script>
