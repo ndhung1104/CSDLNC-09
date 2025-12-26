@@ -50,6 +50,41 @@ function mapBranches(branches) {
   }));
 }
 
+function formatTimeValue(value) {
+  if (!value) return '';
+  if (value instanceof Date) {
+    return value.toISOString().substring(11, 16);
+  }
+  const text = String(value);
+  const match = text.match(/\d{2}:\d{2}/);
+  return match ? match[0] : text;
+}
+
+function buildVetScheduleOverview(rows) {
+  const vetMap = new Map();
+  (rows || []).forEach(row => {
+    const key = `${row.vetId}-${row.branchId}`;
+    if (!vetMap.has(key)) {
+      vetMap.set(key, {
+        vetId: row.vetId,
+        vetName: row.vetName,
+        branchId: row.branchId,
+        branchName: row.branchName,
+        days: {}
+      });
+    }
+    const vet = vetMap.get(key);
+    const dayKey = String(row.dayOfWeek || '');
+    if (!vet.days[dayKey]) vet.days[dayKey] = [];
+    vet.days[dayKey].push({
+      startTime: formatTimeValue(row.startTime),
+      endTime: formatTimeValue(row.endTime),
+      slotMinutes: row.slotMinutes
+    });
+  });
+  return Array.from(vetMap.values());
+}
+
 // Redirect base to dashboard for convenience
 router.get('/', requireCustomer, (_req, res) => {
   res.redirect(`${basePath}/dashboard`);
@@ -182,6 +217,32 @@ router.get('/appointments', requireCustomer, async (req, res) => {
       pastAppointments: [],
       cancelledAppointments: [],
       error: 'Unable to load appointments',
+    });
+  }
+});
+
+router.get('/vets/schedule', requireCustomer, async (req, res) => {
+  try {
+    const branches = mapBranches(await reportModel.getBranches());
+    const branchParam = req.query.branchId || 'all';
+    const selectedBranchId = branchParam === 'all' ? null : parseInt(branchParam, 10);
+    const schedules = await appointmentModel.getVetScheduleOverview({ branchId: selectedBranchId });
+    const vets = buildVetScheduleOverview(schedules);
+
+    renderCustomerPage(res, 'customer/vet-schedule', {
+      title: 'Vet Schedule',
+      branches,
+      selectedBranchId: branchParam === 'all' ? 'all' : (Number.isFinite(selectedBranchId) ? selectedBranchId : ''),
+      vets
+    });
+  } catch (err) {
+    console.error('Guest vet schedule error:', err);
+    renderCustomerPage(res, 'customer/vet-schedule', {
+      title: 'Vet Schedule',
+      branches: [],
+      selectedBranchId: 'all',
+      vets: [],
+      error: 'Unable to load vet schedule'
     });
   }
 });

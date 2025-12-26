@@ -16,6 +16,7 @@ export async function getBranchDailyReport({ branchId, reportDate }) {
                 COUNT(*) as ReceiptCount
             FROM RECEIPT r
             WHERE ${receiptDateFilter}
+              AND r.RECEIPT_STATUS = N'Đã thanh toán'
             ${receiptBranchFilter}
         `, receiptParams);
 
@@ -30,6 +31,7 @@ export async function getBranchDailyReport({ branchId, reportDate }) {
             LEFT JOIN RECEIPT r 
                 ON r.RECEPTIONIST_ID = e.EMPLOYEE_ID
                 AND CONVERT(DATE, r.RECEIPT_CREATED_DATE) = CONVERT(DATE, ?)
+                AND r.RECEIPT_STATUS = N'Đã thanh toán'
                 ${useBranch ? 'AND r.BRANCH_ID = ?' : ''}
             WHERE 1 = 1
                 ${useBranch ? 'AND e.BRANCH_ID = ?' : ''}
@@ -43,17 +45,19 @@ export async function getBranchDailyReport({ branchId, reportDate }) {
                 COUNT(DISTINCT r.CUSTOMER_ID) as TotalCustomers
             FROM RECEIPT r
             WHERE ${receiptDateFilter}
+              AND r.RECEIPT_STATUS = N'Đã thanh toán'
             ${receiptBranchFilter}
         `, receiptParams);
 
-        // 4) Visits count from appointments
-        const appointmentParams = useBranch ? [reportDate, branchId] : [reportDate];
+        // 4) Visits count from checkups
+        const visitParams = useBranch ? [reportDate, branchId] : [reportDate];
         const visitResult = await db.raw(`
             SELECT COUNT(*) as TotalVisits
-            FROM APPOINTMENT a
-            WHERE CONVERT(DATE, a.APPOINTMENT_DATE) = CONVERT(DATE, ?)
-            ${useBranch ? 'AND a.BRANCH_ID = ?' : ''}
-        `, appointmentParams);
+            FROM CHECK_UP c
+            JOIN EMPLOYEE e ON c.VET_ID = e.EMPLOYEE_ID
+            WHERE CONVERT(DATE, c.FOLLOW_UP_VISIT) = CONVERT(DATE, ?)
+            ${useBranch ? 'AND e.BRANCH_ID = ?' : ''}
+        `, visitParams);
 
         // 5) Product revenue (sales products only)
         const productRevenueResult = await db.raw(`
@@ -63,6 +67,7 @@ export async function getBranchDailyReport({ branchId, reportDate }) {
             JOIN RECEIPT r ON rd.RECEIPT_ID = r.RECEIPT_ID
             JOIN SALES_PRODUCT sp ON rd.PRODUCT_ID = sp.SALES_PRODUCT_ID
             WHERE ${receiptDateFilter}
+              AND r.RECEIPT_STATUS = N'Đã thanh toán'
             ${receiptBranchFilter}
         `, receiptParams);
 
@@ -76,13 +81,14 @@ export async function getBranchDailyReport({ branchId, reportDate }) {
             JOIN SALES_PRODUCT sp ON rd.PRODUCT_ID = sp.SALES_PRODUCT_ID
             JOIN PRODUCT p ON sp.SALES_PRODUCT_ID = p.PRODUCT_ID
             WHERE ${receiptDateFilter}
+              AND r.RECEIPT_STATUS = N'Đã thanh toán'
             ${receiptBranchFilter}
             GROUP BY p.PRODUCT_NAME
             ORDER BY Revenue DESC
         `, receiptParams);
 
-        // 6) Doctor revenue (all-time, based on medical service fees)
-        const doctorParams = useBranch ? [branchId] : [];
+        // 6) Doctor revenue (filtered by date and branch, based on medical service fees)
+        const doctorParams = useBranch ? [reportDate, branchId] : [reportDate];
         const doctorRevenue = await db.raw(`
             SELECT
                 e.EMPLOYEE_ID as VetId,
@@ -90,7 +96,9 @@ export async function getBranchDailyReport({ branchId, reportDate }) {
                 ISNULL(SUM(ms.MEDICAL_SERVICE_FEE), 0) as TotalRevenue,
                 COUNT(c.CHECK_UP_ID) as VisitCount
             FROM EMPLOYEE e
-            LEFT JOIN CHECK_UP c ON c.VET_ID = e.EMPLOYEE_ID
+            LEFT JOIN CHECK_UP c
+                ON c.VET_ID = e.EMPLOYEE_ID
+                AND CONVERT(DATE, c.FOLLOW_UP_VISIT) = CONVERT(DATE, ?)
             LEFT JOIN MEDICAL_SERVICE ms ON c.MEDICAL_SERVICE = ms.MEDICAL_SERVICE_ID
             WHERE e.EMPLOYEE_POSITION = 'VET'
             ${useBranch ? 'AND e.BRANCH_ID = ?' : ''}
@@ -111,6 +119,7 @@ export async function getBranchDailyReport({ branchId, reportDate }) {
                 LEFT JOIN RECEIPT r
                     ON r.BRANCH_ID = b.BRANCH_ID
                     AND CONVERT(DATE, r.RECEIPT_CREATED_DATE) = CONVERT(DATE, ?)
+                    AND r.RECEIPT_STATUS = N'Đã thanh toán'
                 GROUP BY b.BRANCH_ID, b.BRANCH_NAME
                 ORDER BY b.BRANCH_ID
             `, [reportDate]);

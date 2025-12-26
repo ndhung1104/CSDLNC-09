@@ -309,11 +309,9 @@ def insert_receipts(n=N_RECEIPTS):
         
         status_prob = random.random()
         if status_prob < 0.8:
-            status = "Đã hoàn thành"
-        elif status_prob < 0.95:
-            status = "Chờ thanh toán"
+            status = "Đã thanh toán"
         else:
-            status = "Hủy"
+            status = "Chờ thanh toán"
 
         batch.append((branch_id, customer_id, receptionist_id, created_at, total_price, payment_method, status))
         
@@ -397,7 +395,7 @@ def rebuild_customer_spending():
     cursor.execute("""
         SELECT CUSTOMER_ID, YEAR(RECEIPT_CREATED_DATE), SUM(RECEIPT_TOTAL_PRICE)
         FROM RECEIPT
-        WHERE RECEIPT_STATUS = N'Đã hoàn thành'
+        WHERE RECEIPT_STATUS = N'Đã thanh toán'
         GROUP BY CUSTOMER_ID, YEAR(RECEIPT_CREATED_DATE)
     """)
     rows = cursor.fetchall()
@@ -414,7 +412,7 @@ def rebuild_customer_spending():
 # ==============================
 def insert_reviews():
     print("Generating reviews...")
-    cursor.execute("SELECT RECEIPT_ID FROM RECEIPT WHERE RECEIPT_STATUS = N'Đã hoàn thành'")
+    cursor.execute("SELECT RECEIPT_ID FROM RECEIPT WHERE RECEIPT_STATUS = N'Đã thanh toán'")
     receipt_ids = [row[0] for row in cursor.fetchall()]
     if not receipt_ids:
         print("No completed receipts for REVIEW.")

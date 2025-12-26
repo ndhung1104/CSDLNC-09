@@ -292,6 +292,18 @@ BEGIN
             RETURN;
         END
 
+        IF EXISTS (
+            SELECT 1
+            FROM RECEIPT
+            WHERE RECEIPT_ID = @ReceiptId
+              AND RECEIPT_STATUS <> N'Chờ thanh toán'
+        )
+        BEGIN
+            RAISERROR('Receipt is already paid.', 16, 1);
+            ROLLBACK TRAN;
+            RETURN;
+        END
+
         DECLARE @MaxItemId INT;
 
         SELECT @MaxItemId = ISNULL(MAX(RECEIPT_ITEM_ID), 0)
@@ -303,10 +315,22 @@ BEGIN
                 i.ProductId,
                 i.PetId,
                 i.Quantity,
-                COALESCE(i.Price, sp.SALES_PRODUCT_PRICE) AS UnitPrice
+                COALESCE(
+                    i.Price,
+                    sp.SALES_PRODUCT_PRICE,
+                    ms.MEDICAL_SERVICE_FEE,
+                    vp.VACCINATION_PLAN_PRICE,
+                    v.VACCINE_PRICE
+                ) AS UnitPrice
             FROM @Items i
             LEFT JOIN SALES_PRODUCT sp
                 ON sp.SALES_PRODUCT_ID = i.ProductId
+            LEFT JOIN MEDICAL_SERVICE ms
+                ON ms.MEDICAL_SERVICE_ID = i.ProductId
+            LEFT JOIN VACCINATION_PLAN vp
+                ON vp.VACCINATION_PLAN_ID = i.ProductId
+            LEFT JOIN VACCINE v
+                ON v.VACCINE_ID = i.ProductId
         ),
         RowCTE AS (
             SELECT
@@ -519,14 +543,14 @@ BEGIN
             RETURN;
         END
 
-        IF @Status = N'Đã hoàn thành'
+        IF @Status = N'Đã thanh toán'
         BEGIN
             COMMIT TRAN;
             RETURN;
         END
 
         UPDATE RECEIPT
-        SET RECEIPT_STATUS = N'Đã hoàn thành'
+        SET RECEIPT_STATUS = N'Đã thanh toán'
         WHERE RECEIPT_ID = @ReceiptId;
 
         DECLARE @Year INT = YEAR(@Created);
@@ -649,8 +673,7 @@ BEGIN
             @PlanPrice   DECIMAL(18,0),
             @RankId      INT,
             @DiscountPct DECIMAL(5,2),
-            @FinalPrice  DECIMAL(18,0),
-            @Year        INT = YEAR(GETDATE());
+            @FinalPrice  DECIMAL(18,0);
 
         SELECT @PlanPrice = VACCINATION_PLAN_PRICE
         FROM VACCINATION_PLAN
@@ -695,7 +718,7 @@ BEGIN
             GETDATE(),
             @FinalPrice,
             @PaymentMethod,
-            N'Đã hoàn thành'
+            N'Chờ thanh toán'
         );
 
         SET @ReceiptId = SCOPE_IDENTITY();
@@ -718,24 +741,7 @@ BEGIN
             1,
             @FinalPrice
         );
-
-        IF EXISTS (SELECT 1 FROM CUSTOMER_SPENDING WHERE CUSTOMER_ID = @CustomerId AND YEAR = @Year)
-        BEGIN
-            UPDATE CUSTOMER_SPENDING
-            SET MONEY_SPENT = MONEY_SPENT + @FinalPrice
-            WHERE CUSTOMER_ID = @CustomerId AND YEAR = @Year;
-        END
-        ELSE
-        BEGIN
-            INSERT INTO CUSTOMER_SPENDING (CUSTOMER_ID, YEAR, MONEY_SPENT)
-            VALUES (@CustomerId, @Year, @FinalPrice);
-        END
-
-        DECLARE @Points INT = dbo.fnCalculateLoyaltyPoints(@FinalPrice);
-
-        UPDATE CUSTOMER
-        SET CUSTOMER_LOYALTY = CUSTOMER_LOYALTY + @Points
-        WHERE CUSTOMER_ID = @CustomerId;
+        EXEC dbo.uspReceiptMarkCompletedAndAccumulate @ReceiptId = @ReceiptId;
 
         COMMIT TRAN;
     END TRY
@@ -821,7 +827,7 @@ BEGIN
             GETDATE(),
             @Total,
             @PaymentMethod,
-            N'Đã thanh toán'
+            N'Chờ thanh toán'
         );
 
         SET @ReceiptId = SCOPE_IDENTITY();
@@ -869,26 +875,7 @@ BEGIN
         JOIN @Items i
             ON s.BRANCH_ID = @BranchId
            AND s.SALES_PRODUCT_ID = i.ProductId;
-
-        DECLARE @Year INT = YEAR(GETDATE());
-
-        IF EXISTS (SELECT 1 FROM CUSTOMER_SPENDING WHERE CUSTOMER_ID = @CustomerId AND YEAR = @Year)
-        BEGIN
-            UPDATE CUSTOMER_SPENDING
-            SET MONEY_SPENT = MONEY_SPENT + @Total
-            WHERE CUSTOMER_ID = @CustomerId AND YEAR = @Year;
-        END
-        ELSE
-        BEGIN
-            INSERT INTO CUSTOMER_SPENDING (CUSTOMER_ID, YEAR, MONEY_SPENT)
-            VALUES (@CustomerId, @Year, @Total);
-        END
-
-        DECLARE @Points INT = dbo.fnCalculateLoyaltyPoints(@Total);
-
-        UPDATE CUSTOMER
-        SET CUSTOMER_LOYALTY = CUSTOMER_LOYALTY + @Points
-        WHERE CUSTOMER_ID = @CustomerId;
+        EXEC dbo.uspReceiptMarkCompletedAndAccumulate @ReceiptId = @ReceiptId;
 
         COMMIT TRAN;
     END TRY
@@ -923,7 +910,7 @@ BEGIN
         ReceiptCount = COUNT(*)
     FROM RECEIPT r
     WHERE r.BRANCH_ID = @BranchId
-      AND r.RECEIPT_STATUS = N'Đã hoàn thành'
+      AND r.RECEIPT_STATUS = N'Đã thanh toán'
       AND r.RECEIPT_CREATED_DATE >= @Start
       AND r.RECEIPT_CREATED_DATE <  @End
     GROUP BY r.BRANCH_ID;
@@ -939,7 +926,7 @@ BEGIN
     LEFT JOIN RECEIPT r
         ON r.RECEPTIONIST_ID = e.EMPLOYEE_ID
        AND r.BRANCH_ID = @BranchId
-       AND r.RECEIPT_STATUS = N'Đã hoàn thành'
+       AND r.RECEIPT_STATUS = N'Đã thanh toán'
        AND r.RECEIPT_CREATED_DATE >= @Start
        AND r.RECEIPT_CREATED_DATE <  @End
     WHERE e.BRANCH_ID = @BranchId
@@ -950,7 +937,7 @@ BEGIN
         SELECT DISTINCT r.CUSTOMER_ID
         FROM RECEIPT r
         WHERE r.BRANCH_ID = @BranchId
-          AND r.RECEIPT_STATUS = N'Đã hoàn thành'
+          AND r.RECEIPT_STATUS = N'Đã thanh toán'
           AND r.RECEIPT_CREATED_DATE >= @Start
           AND r.RECEIPT_CREATED_DATE <  @End
     ),
@@ -1006,7 +993,7 @@ BEGIN
                 [YEAR]    = @Year,
                 TotalSpent = SUM(r.RECEIPT_TOTAL_PRICE)
             FROM RECEIPT r
-            WHERE r.RECEIPT_STATUS = N'Đã hoàn thành'
+            WHERE r.RECEIPT_STATUS = N'Đã thanh toán'
               AND YEAR(r.RECEIPT_CREATED_DATE) = @Year
             GROUP BY r.CUSTOMER_ID
         )

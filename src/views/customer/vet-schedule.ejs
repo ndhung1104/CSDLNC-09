@@ -1,0 +1,86 @@
+<% const bp = typeof basePath !== 'undefined' ? basePath : '/customer'; %>
+<% const dayLabels = [
+  { value: 1, label: 'Mon' },
+  { value: 2, label: 'Tue' },
+  { value: 3, label: 'Wed' },
+  { value: 4, label: 'Thu' },
+  { value: 5, label: 'Fri' },
+  { value: 6, label: 'Sat' },
+  { value: 7, label: 'Sun' }
+]; %>
+
+<section class="py-4 bg-light">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div>
+        <h2 class="mb-0">Vet Schedule</h2>
+        <p class="text-muted mb-0">Overview of weekly availability</p>
+      </div>
+      <form class="d-flex" method="GET" action="<%= bp %>/vets/schedule">
+        <select class="form-select" name="branchId">
+          <option value="all" <%= String(selectedBranchId) === 'all' ? 'selected' : '' %>>All branches</option>
+          <% (branches || []).forEach((branch) => { %>
+            <option value="<%= branch.branchId %>" <%= String(selectedBranchId) === String(branch.branchId) ? 'selected' : '' %>>
+              <%= branch.branchName %>
+            </option>
+          <% }); %>
+        </select>
+        <button class="btn btn-outline-secondary ms-2" type="submit">
+          <i class="bi bi-filter"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<section class="py-4">
+  <div class="container">
+    <% if (error) { %>
+      <div class="alert alert-danger"><%= error %></div>
+    <% } %>
+
+    <div class="card">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Vet</th>
+              <th>Branch</th>
+              <% dayLabels.forEach(day => { %>
+                <th><%= day.label %></th>
+              <% }); %>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (vets && vets.length > 0) { %>
+              <% vets.forEach(vet => { %>
+                <tr>
+                  <td><strong><%= vet.vetName %></strong></td>
+                  <td><%= vet.branchName %></td>
+                  <% dayLabels.forEach(day => { %>
+                    <% const slots = vet.days ? vet.days[String(day.value)] : null; %>
+                    <td>
+                      <% if (slots && slots.length > 0) { %>
+                        <% slots.forEach((slot, idx) => { %>
+                          <div><%= slot.startTime %> - <%= slot.endTime %> (<%= slot.slotMinutes %>m)</div>
+                        <% }); %>
+                      <% } else { %>
+                        <span class="text-muted">-</span>
+                      <% } %>
+                    </td>
+                  <% }); %>
+                </tr>
+              <% }); %>
+            <% } else { %>
+              <tr>
+                <td colspan="<%= 2 + dayLabels.length %>" class="text-center text-muted py-4">
+                  No schedule available
+                </td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>

@@ -93,6 +93,18 @@ export async function createDraft({ customerId, branchId, employeeId, paymentMet
 
 // Add item to receipt (uses stored procedure for proper price calculation)
 export async function addItem({ receiptId, productId, quantity, petId = null, price = null }) {
+    const receipt = await db('RECEIPT')
+        .select('RECEIPT_STATUS')
+        .where('RECEIPT_ID', receiptId)
+        .first();
+
+    if (!receipt) {
+        throw new Error('Receipt not found.');
+    }
+    if (receipt.RECEIPT_STATUS !== 'Chờ thanh toán') {
+        throw new Error('Receipt is already paid.');
+    }
+
     // The stored procedure expects a table-valued parameter, but we'll use direct INSERT
     // Get the max item ID for this receipt
     const maxResult = await db.raw(`
@@ -121,6 +133,12 @@ export async function addItem({ receiptId, productId, quantity, petId = null, pr
         unitPrice = planResult[0]?.price;
     }
     if (unitPrice == null) {
+        const vaccineResult = await db.raw(`
+            SELECT VACCINE_PRICE as price FROM VACCINE WHERE VACCINE_ID = ?
+        `, [productId]);
+        unitPrice = vaccineResult[0]?.price;
+    }
+    if (unitPrice == null) {
         unitPrice = 0;
     }
 
@@ -145,6 +163,18 @@ export async function addItem({ receiptId, productId, quantity, petId = null, pr
 
 // Remove item from receipt
 export async function removeItem({ receiptId, itemId }) {
+    const receipt = await db('RECEIPT')
+        .select('RECEIPT_STATUS')
+        .where('RECEIPT_ID', receiptId)
+        .first();
+
+    if (!receipt) {
+        throw new Error('Receipt not found.');
+    }
+    if (receipt.RECEIPT_STATUS !== 'Chờ thanh toán') {
+        throw new Error('Receipt is already paid.');
+    }
+
     // Delete the item
     await db.raw(`
         DELETE FROM RECEIPT_DETAIL WHERE RECEIPT_ID = ? AND RECEIPT_ITEM_ID = ?
@@ -232,7 +262,7 @@ export async function getVaccinationPlanById(planId) {
 // Get minimal receipt info for item operations
 export async function getReceiptInfo(receiptId) {
     return db('RECEIPT')
-        .select('CUSTOMER_ID as customerId', 'RECEIPT_STATUS as status')
+        .select('CUSTOMER_ID as customerId', 'RECEIPT_STATUS as status', 'BRANCH_ID as branchId')
         .where('RECEIPT_ID', receiptId)
         .first();
 }
@@ -242,17 +272,68 @@ export async function getVaccines() {
     return db.raw(`
         SELECT 
             v.VACCINE_ID as id,
-            v.VACCINE_NAME as name,
+            p.PRODUCT_NAME as name,
             v.VACCINE_PRICE as price,
             'vaccine' as type
         FROM VACCINE v
-        ORDER BY v.VACCINE_NAME
+        JOIN PRODUCT p ON v.VACCINE_ID = p.PRODUCT_ID
+        ORDER BY p.PRODUCT_NAME
     `);
+}
+
+export async function isVaccineProduct(productId) {
+    const result = await db.raw(`
+        SELECT 1 as found
+        FROM VACCINE
+        WHERE VACCINE_ID = ?
+    `, [productId]);
+
+    return !!result[0];
+}
+
+export async function getVaccinationById(vaccinationId) {
+    const result = await db.raw(`
+        SELECT 
+            v.VACCINATION_ID as vaccinationId,
+            v.MEDICAL_SERVICE as medicalServiceId,
+            ms.MEDICAL_SERVICE_FEE as medicalServiceFee,
+            p.PRODUCT_NAME as medicalServiceName,
+            v.PET_ID as petId,
+            pet.PET_NAME as petName,
+            pet.CUSTOMER_ID as customerId,
+            v.PET_VACCINATION_PLAN_ID as petVaccinationPlanId,
+            vb.BRANCH_ID as branchId,
+            vac.VACCINE_ID as vaccineId,
+            vp.PRODUCT_NAME as vaccineName,
+            vac.VACCINE_PRICE as vaccinePrice
+        FROM VACCINATION v
+        JOIN MEDICAL_SERVICE ms ON v.MEDICAL_SERVICE = ms.MEDICAL_SERVICE_ID
+        JOIN PRODUCT p ON ms.MEDICAL_SERVICE_ID = p.PRODUCT_ID
+        JOIN BRANCH_VACCINE_BATCH vb ON v.VACCINE_BATCH_ID = vb.VACCINE_BATCH_ID
+        JOIN VACCINE vac ON vb.VACCINE_ID = vac.VACCINE_ID
+        JOIN PRODUCT vp ON vac.VACCINE_ID = vp.PRODUCT_ID
+        JOIN PET pet ON v.PET_ID = pet.PET_ID
+        WHERE v.VACCINATION_ID = ?
+    `, [vaccinationId]);
+
+    return result[0] || null;
 }
 
 // Add vaccination plan item to receipt and create pet plan record
 export async function addVaccinationPlanItem({ receiptId, planId, petId, customerId }) {
     return db.transaction(async (trx) => {
+        const receipt = await trx('RECEIPT')
+            .select('RECEIPT_STATUS')
+            .where('RECEIPT_ID', receiptId)
+            .first();
+
+        if (!receipt) {
+            throw new Error('Receipt not found.');
+        }
+        if (receipt.RECEIPT_STATUS !== 'Chờ thanh toán') {
+            throw new Error('Receipt is already paid.');
+        }
+
         const priceResult = await trx.raw(`
             SELECT CAST(
                 vp.VACCINATION_PLAN_PRICE * (1 - dbo.fnGetMembershipDiscountPercent(c.MEMBERSHIP_RANK_ID))

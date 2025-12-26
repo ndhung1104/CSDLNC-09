@@ -165,3 +165,30 @@ export async function getAvailableVets({ branchId, appointmentDate, appointmentT
     })
     .orderBy('e.EMPLOYEE_NAME', 'asc');
 }
+
+export async function getVetScheduleOverview({ branchId = null } = {}) {
+  let query = db('VET_SCHEDULE as vs')
+    .join('EMPLOYEE as e', 'vs.VET_ID', 'e.EMPLOYEE_ID')
+    .join('BRANCH as b', 'vs.BRANCH_ID', 'b.BRANCH_ID')
+    .select(
+      'vs.VET_ID as vetId',
+      'e.EMPLOYEE_NAME as vetName',
+      'vs.BRANCH_ID as branchId',
+      'b.BRANCH_NAME as branchName',
+      'vs.DAY_OF_WEEK as dayOfWeek',
+      'vs.START_TIME as startTime',
+      'vs.END_TIME as endTime',
+      'vs.SLOT_MINUTES as slotMinutes'
+    )
+    .where('e.EMPLOYEE_POSITION', 'VET');
+
+  if (branchId) {
+    query = query.where('vs.BRANCH_ID', branchId);
+  }
+
+  return query
+    .orderBy('vs.BRANCH_ID', 'asc')
+    .orderBy('e.EMPLOYEE_NAME', 'asc')
+    .orderBy('vs.DAY_OF_WEEK', 'asc')
+    .orderBy('vs.START_TIME', 'asc');
+}

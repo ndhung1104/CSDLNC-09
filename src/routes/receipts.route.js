@@ -91,10 +91,50 @@ router.get('/:id', requireAnyEmployee(), async (req, res) => {
 
 // Add item to receipt
 router.post('/:id/items', requireAnyEmployee(), async (req, res) => {
-    const { productId, quantity, petId } = req.body;
+    const { productId, quantity, petId, vaccinationId } = req.body;
     try {
-        const itemId = parseInt(productId);
         const receiptId = parseInt(req.params.id);
+        const vaccinationIdValue = parseInt(vaccinationId);
+
+        if (vaccinationIdValue) {
+            const vaccination = await receiptModel.getVaccinationById(vaccinationIdValue);
+            if (!vaccination) {
+                throw new Error('Vaccination not found.');
+            }
+
+            const receiptInfo = await receiptModel.getReceiptInfo(receiptId);
+            if (!receiptInfo?.customerId) {
+                throw new Error('Receipt customer is required for vaccination.');
+            }
+            if (vaccination.customerId !== receiptInfo.customerId) {
+                throw new Error('Vaccination does not belong to this customer.');
+            }
+            if (vaccination.petVaccinationPlanId) {
+                throw new Error('Vaccination belongs to a plan. Add the plan item instead.');
+            }
+            if (receiptInfo.branchId && vaccination.branchId && receiptInfo.branchId !== vaccination.branchId) {
+                throw new Error('Vaccination branch does not match receipt branch.');
+            }
+
+            const unitPrice = (vaccination.vaccinePrice || 0) + (vaccination.medicalServiceFee || 0);
+            await receiptModel.addItem({
+                receiptId,
+                productId: vaccination.vaccineId,
+                quantity: 1,
+                petId: vaccination.petId,
+                price: unitPrice
+            });
+            res.redirect(`/receipts/${req.params.id}?success=Da+them+mui+tiem`);
+            return;
+        }
+
+        const itemId = parseInt(productId);
+        if (Number.isNaN(itemId)) {
+            throw new Error('Invalid product.');
+        }
+        if (await receiptModel.isVaccineProduct(itemId)) {
+            throw new Error('Vaccines must be added via lookup.');
+        }
         const plan = await receiptModel.getVaccinationPlanById(itemId);
 
         if (plan) {

@@ -118,71 +118,24 @@ export async function getById(id) {
 }
 
 // Retail purchase - Use Case 4
-// Since uspRetailPurchaseWithStockCheck uses table-valued parameter, we use direct SQL transaction
+// Use stored procedure with a table variable to keep spending updates centralized.
 export async function purchase({ productId, quantity, customerId, branchId, employeeId, paymentMethod = 'Cash' }) {
-    // Use a transaction to: check stock, create receipt, add item, deduct stock
-    return db.transaction(async trx => {
-        // Check stock
-        const stock = await trx('BRANCH_STOCK')
-            .where({ BRANCH_ID: branchId, SALES_PRODUCT_ID: productId })
-            .first();
+    const result = await db.raw(`
+        DECLARE @Items dbo.ReceiptItemType;
+        INSERT INTO @Items (ProductId, PetId, Quantity, Price)
+        VALUES (?, NULL, ?, NULL);
 
-        if (!stock || stock.QUANTITY < quantity) {
-            throw new Error('Không đủ hàng tồn kho');
-        }
+        DECLARE @NewReceiptId INT;
+        EXEC dbo.uspRetailPurchaseWithStockCheck
+            @BranchId = ?,
+            @CustomerId = ?,
+            @ReceptionistId = ?,
+            @PaymentMethod = ?,
+            @Items = @Items,
+            @ReceiptId = @NewReceiptId OUTPUT;
+        SELECT @NewReceiptId AS id;
+    `, [productId, quantity, branchId, customerId, employeeId, paymentMethod]);
 
-        // Get product price
-        const product = await trx('SALES_PRODUCT')
-            .where('SALES_PRODUCT_ID', productId)
-            .first();
-
-        const totalPrice = product.SALES_PRODUCT_PRICE * quantity;
-
-        // Create receipt
-        const [receiptResult] = await trx('RECEIPT').insert({
-            BRANCH_ID: branchId,
-            CUSTOMER_ID: customerId,
-            RECEPTIONIST_ID: employeeId,
-            RECEIPT_CREATED_DATE: new Date(),
-            RECEIPT_TOTAL_PRICE: totalPrice,
-            RECEIPT_PAYMENT_METHOD: paymentMethod,
-            RECEIPT_STATUS: 'Đã hoàn thành'
-        }).returning('RECEIPT_ID');
-
-        const receiptId = receiptResult?.RECEIPT_ID || receiptResult;
-
-        // Add receipt detail
-        await trx('RECEIPT_DETAIL').insert({
-            RECEIPT_ITEM_ID: 1,
-            RECEIPT_ID: receiptId,
-            PRODUCT_ID: productId,
-            RECEIPT_ITEM_AMOUNT: quantity,
-            RECEIPT_ITEM_PRICE: product.SALES_PRODUCT_PRICE
-        });
-
-        // Deduct stock
-        await trx('BRANCH_STOCK')
-            .where({ BRANCH_ID: branchId, SALES_PRODUCT_ID: productId })
-            .decrement('QUANTITY', quantity);
-
-        // Update customer spending
-        const year = new Date().getFullYear();
-        const existingSpending = await trx('CUSTOMER_SPENDING')
-            .where({ CUSTOMER_ID: customerId, YEAR: year })
-            .first();
-
-        if (existingSpending) {
-            await trx('CUSTOMER_SPENDING')
-                .where({ CUSTOMER_ID: customerId, YEAR: year })
-                .increment('MONEY_SPENT', totalPrice);
-        } else {
-            await trx('CUSTOMER_SPENDING').insert({
-                CUSTOMER_ID: customerId,
-                YEAR: year,
-                MONEY_SPENT: totalPrice
-            });
-        }
-
-        return receiptId;
-    });
+    return result[0]?.id || null;
 }
+

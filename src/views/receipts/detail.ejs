@@ -65,7 +65,7 @@
                                                         </p>
                                                         <p><strong>Trạng thái:</strong>
                                                             <span
-                                                                class="badge bg-<%= receipt.RECEIPT_STATUS === 'Đã hoàn thành' ? 'success' : receipt.RECEIPT_STATUS === 'Chờ thanh toán' ? 'warning' : 'secondary' %>">
+                                                                class="badge bg-<%= receipt.RECEIPT_STATUS === 'Đã thanh toán' ? 'success' : receipt.RECEIPT_STATUS === 'Chờ thanh toán' ? 'warning' : 'secondary' %>">
                                                                 <%= receipt.RECEIPT_STATUS %>
                                                             </span>
                                                         </p>
@@ -103,7 +103,7 @@
                                                                     nhất 1 sản phẩm để thanh toán.</p>
                                                                 <% } %>
                                                                     <% } else if
-                                                                        (receipt.RECEIPT_STATUS==='Đã hoàn thành' ) { %>
+                                                                        (receipt.RECEIPT_STATUS==='Đã thanh toán' ) { %>
                                                                         <div class="text-center text-success py-3">
                                                                             <i class="bi bi-check-circle-fill fs-1"></i>
                                                                             <p class="mt-2 mb-0">Hóa đơn đã được thanh
@@ -237,6 +237,16 @@
                 <form method="POST" action="/receipts/<%= receipt.RECEIPT_ID %>/items">
                     <div class="modal-body">
                         <div class="mb-3">
+                            <label class="form-label">Lookup vaccination (VACCINATION_ID)</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="vaccinationSearch" placeholder="Enter vaccination ID">
+                                <button type="button" class="btn btn-outline-primary" id="vaccinationLookupBtn">Lookup</button>
+                                <button type="button" class="btn btn-outline-secondary" id="vaccinationClearBtn" style="display:none;">Clear</button>
+                            </div>
+                            <input type="hidden" name="vaccinationId" id="vaccinationId">
+                            <div id="vaccinationResult" class="form-text"></div>
+                        </div>
+                        <div class="mb-3">
                             <label class="form-label">Chọn sản phẩm/dịch vụ <span class="text-danger">*</span></label>
                             <select name="productId" class="form-select" required>
                                 <option value="">-- Chọn --</option>
@@ -260,6 +270,7 @@
                                                     <% }) %>
                                             </optgroup>
                                             <% } %>
+                                            
                                             <% if (typeof plans !=='undefined' && plans.length> 0) { %>
                                             <optgroup label="Vaccination Plans">
                                                 <% plans.forEach(pl=> { %>
@@ -292,7 +303,7 @@
                         <% } %>
                         <div class="mb-3">
                             <label class="form-label">S? lu?ng</label>
-                            <input type="number" name="quantity" class="form-control" value="1" min="1" max="100"
+                            <input type="number" name="quantity" id="quantityInput" class="form-control" value="1" min="1" max="100"
                                 required>
                         </div>
 
@@ -313,9 +324,84 @@
             const itemSelect = document.querySelector('select[name="productId"]');
             const petSelect = document.getElementById('petIdSelect');
             const planNote = document.getElementById('planPetNote');
-            if (!itemSelect || !petSelect) return;
+            const vaccinationSearch = document.getElementById('vaccinationSearch');
+            const vaccinationLookupBtn = document.getElementById('vaccinationLookupBtn');
+            const vaccinationClearBtn = document.getElementById('vaccinationClearBtn');
+            const vaccinationIdField = document.getElementById('vaccinationId');
+            const vaccinationResult = document.getElementById('vaccinationResult');
+            const quantityInput = document.getElementById('quantityInput');
+            if (!itemSelect) return;
+
+            function setVaccinationMessage(message, type) {
+                if (!vaccinationResult) return;
+                vaccinationResult.textContent = message || '';
+                const baseClass = 'form-text';
+                if (!type) {
+                    vaccinationResult.className = baseClass;
+                    return;
+                }
+                const typeClass = type === 'error' ? 'text-danger' : type === 'warning' ? 'text-warning' : 'text-success';
+                vaccinationResult.className = `${baseClass} ${typeClass}`;
+            }
+
+            function resetVaccinationSelection({ clearSearch = false } = {}) {
+                if (vaccinationIdField) vaccinationIdField.value = '';
+                if (clearSearch && vaccinationSearch) vaccinationSearch.value = '';
+                if (vaccinationClearBtn) vaccinationClearBtn.style.display = 'none';
+                if (itemSelect) {
+                    const tempOption = itemSelect.querySelector('option[data-vaccination-option="true"]');
+                    if (tempOption) tempOption.remove();
+                    itemSelect.value = '';
+                    itemSelect.disabled = false;
+                }
+                if (petSelect) petSelect.disabled = false;
+                if (quantityInput) quantityInput.disabled = false;
+                syncPetRequirement();
+            }
+
+            function applyVaccinationSelection(data) {
+                if (!data) return;
+                if (vaccinationIdField) vaccinationIdField.value = data.vaccinationId || '';
+                if (vaccinationClearBtn) vaccinationClearBtn.style.display = 'inline-block';
+
+                const priceValue = (Number(data.vaccinePrice) || 0) + (Number(data.medicalServiceFee) || 0);
+                const hasPrice = data.vaccinePrice != null || data.medicalServiceFee != null;
+                const priceText = hasPrice ? `${priceValue.toLocaleString('vi-VN')} VND` : 'N/A';
+
+                if (itemSelect) {
+                    const targetValue = String(data.vaccineId || '');
+                    let option = itemSelect.querySelector(`option[value="${targetValue}"]`);
+                    if (!option) {
+                        option = document.createElement('option');
+                        option.value = targetValue;
+                        option.textContent = `${data.vaccineName || 'Vaccine'} - ${priceText}`;
+                        option.setAttribute('data-item-type', 'vaccine');
+                        option.setAttribute('data-vaccination-option', 'true');
+                        itemSelect.appendChild(option);
+                    }
+                    itemSelect.value = targetValue;
+                    itemSelect.disabled = true;
+                }
+
+                if (petSelect && data.petId) {
+                    petSelect.value = String(data.petId);
+                    petSelect.disabled = true;
+                }
+
+                if (quantityInput) {
+                    quantityInput.value = 1;
+                    quantityInput.disabled = true;
+                }
+
+                syncPetRequirement();
+
+
+                const summary = `Vaccine: ${data.vaccineName || 'N/A'} | Pet: ${data.petName || 'N/A'} | Service: ${data.medicalServiceName || 'N/A'} | Price: ${priceText}`;
+                setVaccinationMessage(summary, 'success');
+            }
 
             function syncPetRequirement() {
+                if (!petSelect) return;
                 const selected = itemSelect.options[itemSelect.selectedIndex];
                 const itemType = selected ? selected.getAttribute('data-item-type') : null;
                 const isPlan = itemType === 'plan';
@@ -323,7 +409,68 @@
                 if (planNote) planNote.style.display = isPlan ? 'block' : 'none';
             }
 
-            itemSelect.addEventListener('change', syncPetRequirement);
+            async function lookupVaccination() {
+                if (!vaccinationSearch) return;
+                const raw = vaccinationSearch.value.trim();
+                if (!raw) {
+                    setVaccinationMessage('Please enter a vaccination ID.', 'warning');
+                    return;
+                }
+
+                setVaccinationMessage('Loading...');
+                if (vaccinationLookupBtn) vaccinationLookupBtn.disabled = true;
+
+                try {
+                    const res = await fetch(`/api/vaccinations/${encodeURIComponent(raw)}`);
+                    if (!res.ok) {
+                        const errorText = res.status === 404 ? 'Vaccination not found.' : 'Unable to lookup vaccination.';
+                        resetVaccinationSelection();
+                        setVaccinationMessage(errorText, 'error');
+                        return;
+                    }
+                    const data = await res.json();
+
+                    if (data.petVaccinationPlanId) {
+                        resetVaccinationSelection();
+                        setVaccinationMessage('Vaccination belongs to a plan. Add the plan item instead.', 'warning');
+                        return;
+                    }
+
+                    applyVaccinationSelection(data);
+                } catch (err) {
+                    resetVaccinationSelection();
+                    setVaccinationMessage('Unable to lookup vaccination.', 'error');
+                } finally {
+                    if (vaccinationLookupBtn) vaccinationLookupBtn.disabled = false;
+                }
+            }
+
+            itemSelect.addEventListener('change', function () {
+                if (vaccinationIdField && vaccinationIdField.value) {
+                    resetVaccinationSelection();
+                    setVaccinationMessage('');
+                }
+                syncPetRequirement();
+            });
+
+            if (vaccinationLookupBtn) {
+                vaccinationLookupBtn.addEventListener('click', lookupVaccination);
+            }
+            if (vaccinationSearch) {
+                vaccinationSearch.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        lookupVaccination();
+                    }
+                });
+            }
+            if (vaccinationClearBtn) {
+                vaccinationClearBtn.addEventListener('click', function () {
+                    resetVaccinationSelection({ clearSearch: true });
+                    setVaccinationMessage('');
+                });
+            }
+
             syncPetRequirement();
         });
     </script>
@@ -331,3 +478,6 @@
 </body>
 
 </html>
+
+
+

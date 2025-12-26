@@ -38,7 +38,8 @@ export async function getById(id) {
 
     const vaccines = await db('VACCINATION_PLAN_DETAIL')
         .join('VACCINE', 'VACCINATION_PLAN_DETAIL.VACCINE_ID', 'VACCINE.VACCINE_ID')
-        .select('VACCINE.VACCINE_ID as id', 'VACCINE.VACCINE_NAME as name', 'VACCINATION_PLAN_DETAIL.VACCINE_DOSAGE as dosage')
+        .join('PRODUCT', 'VACCINE.VACCINE_ID', 'PRODUCT.PRODUCT_ID')
+        .select('VACCINE.VACCINE_ID as id', 'PRODUCT.PRODUCT_NAME as name', 'VACCINATION_PLAN_DETAIL.VACCINE_DOSAGE as dosage')
         .where('VACCINATION_PLAN_DETAIL.VACCINATION_PLAN_ID', id);
 
     return { ...plan, vaccines };

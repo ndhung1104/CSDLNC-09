@@ -101,10 +101,17 @@ INSERT INTO PRODUCT (PRODUCT_ID, PRODUCT_NAME) VALUES
 (23, N'Dịch vụ khám chuyên sâu'),
 (24, N'Dịch vụ tái khám'),
 (25, N'Dịch vụ tiêm vaccine lẻ'),
-
 (26, N'Gói tiêm phòng 6 tháng cho chó'),
 (27, N'Gói tiêm phòng 12 tháng cho chó'),
-(28, N'Gói tiêm phòng cơ bản cho mèo');
+(28, N'Gói tiêm phòng cơ bản cho mèo'),
+
+(29, N'Vaccine 5 trong 1 cho chó'),
+(30, N'Vaccine 7 trong 1 cho chó'),
+(31, N'Vaccine dại cho chó mèo'),
+(32, N'Vaccine 4 trong 1 cho mèo'),
+(33, N'Vaccine FIP cho mèo');
+
+
 SET IDENTITY_INSERT PRODUCT OFF;
 GO
 
@@ -148,16 +155,14 @@ INSERT INTO MEDICAL_SERVICE (MEDICAL_SERVICE_ID, MEDICAL_SERVICE_FEE) VALUES
 GO
 
 /* ==========================================
-   8. VACCINE (identity, explicit IDs for FK)
+   8. VACCINE (mapped to PRODUCT)
    ========================================== */
-SET IDENTITY_INSERT VACCINE ON;
 INSERT INTO VACCINE (VACCINE_ID, VACCINE_NAME, VACCINE_DES, VACCINE_PRICE) VALUES
-(1, N'Vaccine 5 trong 1 cho chó', N'Phòng care, parvo, viêm gan, ho cũi chó, dại.', 250000),
-(2, N'Vaccine 7 trong 1 cho chó', N'Phòng nhiều bệnh truyền nhiễm cho chó.', 300000),
-(3, N'Vaccine dại cho chó mèo',  N'Phòng bệnh dại.', 200000),
-(4, N'Vaccine 4 trong 1 cho mèo', N'Phòng cúm mèo, viêm mũi họng, panleukopenia...', 250000),
-(5, N'Vaccine FIP cho mèo',      N'Hỗ trợ phòng một số bệnh truyền nhiễm.', 350000);
-SET IDENTITY_INSERT VACCINE OFF;
+(29, N'Vaccine 5 trong 1 cho chó', N'Phòng care, parvo, viêm gan, ho cũi chó, dại.', 250000),
+(30, N'Vaccine 7 trong 1 cho chó', N'Phòng nhiều bệnh truyền nhiễm cho chó.', 300000),
+(31, N'Vaccine dại cho chó mèo',  N'Phòng bệnh dại.', 200000),
+(32, N'Vaccine 4 trong 1 cho mèo', N'Phòng cảm mèo, viêm mũi họng, panleukopenia...', 250000),
+(33, N'Vaccine FIP cho mèo',      N'Hỗ trợ phòng một số bệnh truyền nhiễm.', 350000);
 GO
 
 /* ==========================================
@@ -176,19 +181,18 @@ GO
 /* ==========================================
    10. VACCINATION_PLAN_DETAIL
    ========================================== */
--- Giả sử ID vaccine 1..5 tương ứng theo thứ tự insert ở trên
+-- Giả sử ID vaccine 29..33 tương ứng theo thứ tự insert ở trên
 INSERT INTO VACCINATION_PLAN_DETAIL (VACCINATION_PLAN_ID, VACCINE_ID, VACCINE_DOSAGE) VALUES
-(26, 1, 1),
-(26, 3, 1),
+(26, 29, 1),
+(26, 31, 1),
 
-(27, 1, 2),
-(27, 2, 1),
-(27, 3, 1),
+(27, 29, 2),
+(27, 30, 1),
+(27, 31, 1),
 
-(28, 4, 2),
-(28, 5, 1);
+(28, 32, 2),
+(28, 33, 1);
 GO
-
 /* ==========================================
    11. EMPLOYEE (gán BRANCH_ID; BRANCH_MANAGER update sau)
    EMPLOYEE_POSITION:
@@ -402,3 +406,4 @@ EXEC dbo.uspPetCreateForCustomer
 
 PRINT N'Sample customers and pets created successfully!';
 GO
+

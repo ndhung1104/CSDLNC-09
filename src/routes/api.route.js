@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { requireRole } from '../middleware/auth.middleware.js';
 import db from '../utils/db.js';
 import * as appointmentModel from '../models/appointment.model.js';
+import * as receiptModel from '../models/receipt.model.js';
 
 const router = Router();
 
@@ -60,6 +61,21 @@ router.get('/vets/available', requireRole('RECEP', 'SALES', 'MGR', 'DIRECTOR'), 
     try {
         const vets = await appointmentModel.getAvailableVets({ branchId, appointmentDate, appointmentTime });
         res.json(vets);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Lookup vaccination record by ID
+router.get('/vaccinations/:id', requireRole('RECEP', 'SALES', 'MGR', 'DIRECTOR', 'VET'), async (req, res) => {
+    const vaccinationId = parseInt(req.params.id);
+    if (!vaccinationId) return res.status(400).json({ error: 'Invalid vaccination ID' });
+
+    try {
+        const vaccination = await receiptModel.getVaccinationById(vaccinationId);
+        if (!vaccination) return res.status(404).json({ error: 'Vaccination not found' });
+        res.json(vaccination);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Internal server error' });
