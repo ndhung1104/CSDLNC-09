@@ -9,10 +9,10 @@ const router = Router();
 // List checkups
 router.get('/', requireAnyEmployee(), async (req, res) => {
     const emp = req.session.employee;
-    const { status, page = 1 } = req.query;
+    const { status = '', page = 1, fromDate = '', toDate = '', q = '' } = req.query;
     const vetId = emp.position === 'VET' ? emp.id : null;
     try {
-        const result = await checkupModel.getAll({ vetId, status, page: parseInt(page) });
+        const result = await checkupModel.getAll({ vetId, status, fromDate: fromDate || null, toDate: toDate || null, q: q || '', page: parseInt(page) });
         console.log('=== CHECKUPS DEBUG ===');
         console.log('Result type:', typeof result);
         console.log('Result keys:', Object.keys(result));
@@ -24,10 +24,10 @@ router.get('/', requireAnyEmployee(), async (req, res) => {
 
         const { checkups, total, limit } = result;
         const totalPages = Math.ceil(total / limit);
-        res.render('checkups/list', { title: 'Phiếu khám', checkups, status, page: parseInt(page), totalPages, error: null, employee: emp });
+        res.render('checkups/list', { title: 'Phiếu khám', checkups, status, fromDate, toDate, q, page: parseInt(page), totalPages, error: null, employee: emp });
     } catch (err) {
         console.error('CHECKUPS ERROR:', err);
-        res.render('checkups/list', { title: 'Phiếu khám', checkups: [], status: '', page: 1, totalPages: 0, error: err.message, employee: emp });
+        res.render('checkups/list', { title: 'Phiếu khám', checkups: [], status: status || '', fromDate, toDate, q, page: 1, totalPages: 0, error: err.message, employee: emp });
     }
 });
 

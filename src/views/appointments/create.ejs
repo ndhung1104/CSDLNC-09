@@ -82,7 +82,13 @@
                   </div>
                   <div class="col-md-3">
                     <label class="form-label">Time <span class="text-danger">*</span></label>
-                    <input type="time" class="form-control" name="appointmentTime" required>
+                    <select class="form-select" id="appointmentTime" name="appointmentTime" required>
+                      <option value="">Select time...</option>
+                      <% const timeOptions = ['08:00','09:00','10:00','11:00','13:00','14:00','15:00','16:00','17:00']; %>
+                      <% timeOptions.forEach(t => { %>
+                        <option value="<%= t %>"><%= t %></option>
+                      <% }) %>
+                    </select>
                   </div>
                 </div>
 
@@ -110,7 +116,7 @@
         const vetSelect = document.getElementById('vetId');
         const vetHelp = document.getElementById('vetHelp');
         const dateInput = document.querySelector('input[name="appointmentDate"]');
-        const timeInput = document.querySelector('input[name="appointmentTime"]');
+        const timeInput = document.getElementById('appointmentTime');
         const branchServices = <%- JSON.stringify(branchServices || {}) %>;
         let debounceTimer;
 

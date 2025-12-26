@@ -1,7 +1,15 @@
 import db from '../utils/db.js';
 
 // Get all checkups with filters (using raw SQL with TOP for reliability)
-export async function getAll({ vetId = null, status = null, page = 1, limit = 20 } = {}) {
+export async function getAll({
+    vetId = null,
+    status = null,
+    fromDate = null,
+    toDate = null,
+    q = '',
+    page = 1,
+    limit = 20
+} = {}) {
     const filters = [];
     const params = [];
     if (vetId != null) {
@@ -9,13 +17,38 @@ export async function getAll({ vetId = null, status = null, page = 1, limit = 20
         params.push(vetId);
     }
     if (status) {
-        filters.push('c.STATUS = ?');
-        params.push(status);
+        const normalized = String(status).toLowerCase();
+        const statusTokens = {
+            pending: ['%cho%', '%pending%'],
+            in_progress: ['%dang%', '%progress%'],
+            completed: ['%hoan%', '%complete%']
+        }[normalized] || [`%${status}%`];
+        const statusFilters = statusTokens.map(() => 'c.STATUS COLLATE Latin1_General_CI_AI LIKE ?');
+        filters.push(`(${statusFilters.join(' OR ')})`);
+        params.push(...statusTokens);
+    }
+    if (fromDate) {
+        filters.push('CONVERT(DATE, c.FOLLOW_UP_VISIT) >= CONVERT(DATE, ?)');
+        params.push(fromDate);
+    }
+    if (toDate) {
+        filters.push('CONVERT(DATE, c.FOLLOW_UP_VISIT) <= CONVERT(DATE, ?)');
+        params.push(toDate);
+    }
+    if (q) {
+        filters.push('(p.PET_NAME COLLATE Latin1_General_CI_AI LIKE ? OR cu.CUSTOMER_NAME COLLATE Latin1_General_CI_AI LIKE ?)');
+        params.push(`%${q}%`, `%${q}%`);
     }
     const whereClause = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
 
     // Count query
-    const countResult = await db.raw(`SELECT COUNT(*) as count FROM CHECK_UP c ${whereClause}`, params);
+    const countResult = await db.raw(`
+        SELECT COUNT(*) as count
+        FROM CHECK_UP c
+        JOIN PET p ON c.PET_ID = p.PET_ID
+        JOIN CUSTOMER cu ON p.CUSTOMER_ID = cu.CUSTOMER_ID
+        ${whereClause}
+    `, params);
     const total = countResult[0]?.count || 0;
 
     // Data query using raw SQL with TOP (simpler for SQL Server)
@@ -49,11 +82,14 @@ export async function getById(id) {
             c.*,
             p.PET_NAME as petName,
             cu.CUSTOMER_NAME as customerName,
-            e.EMPLOYEE_NAME as vetName
+            e.EMPLOYEE_NAME as vetName,
+            b.BRANCH_NAME as branchName,
+            b.BRANCH_ID as branchId
         FROM CHECK_UP c
         JOIN PET p ON c.PET_ID = p.PET_ID
         JOIN CUSTOMER cu ON p.CUSTOMER_ID = cu.CUSTOMER_ID
         LEFT JOIN EMPLOYEE e ON c.VET_ID = e.EMPLOYEE_ID
+        LEFT JOIN BRANCH b ON e.BRANCH_ID = b.BRANCH_ID
         WHERE c.CHECK_UP_ID = ?
     `, [id]);
     return result[0] || null;
@@ -70,7 +106,15 @@ export async function create({ petId, vetId, medicalServiceId = 1 }) {
       @CheckUpId = @NewId OUTPUT;
     SELECT @NewId AS id;
   `, [petId, vetId, medicalServiceId]);
-    return result[0]?.id || null;
+    const id = result[0]?.id || null;
+    if (id) {
+        await db.raw(`
+            UPDATE CHECK_UP
+            SET FOLLOW_UP_VISIT = ISNULL(FOLLOW_UP_VISIT, GETDATE())
+            WHERE CHECK_UP_ID = ?
+        `, [id]);
+    }
+    return id;
 }
 
 // Update checkup notes using stored procedure

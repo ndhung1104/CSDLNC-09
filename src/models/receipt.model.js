@@ -1,11 +1,62 @@
 import db from '../utils/db.js';
 
 // Get all receipts - sorted by status (drafts first), then by date
-export async function getAll({ branchId = null, status = null, page = 1, limit = 20, sort = 'status' } = {}) {
+export async function getAll({
+    branchId = null,
+    status = null,
+    fromDate = null,
+    toDate = null,
+    q = '',
+    page = 1,
+    limit = 20,
+    sort = 'status'
+} = {}) {
     const offset = (page - 1) * limit;
 
+    const filters = [];
+    const params = [];
+    if (branchId) {
+        filters.push('r.BRANCH_ID = ?');
+        params.push(branchId);
+    }
+    if (status) {
+        const normalized = String(status).toLowerCase();
+        const statusTokens = normalized === 'paid'
+            ? ['%da%', '%paid%', '%thanh toan%']
+            : normalized === 'unpaid'
+                ? ['%cho%', '%pending%', '%chua%']
+                : [`%${status}%`];
+        const statusFilters = statusTokens.map(() => 'r.RECEIPT_STATUS COLLATE Latin1_General_CI_AI LIKE ?');
+        filters.push(`(${statusFilters.join(' OR ')})`);
+        params.push(...statusTokens);
+    }
+    if (fromDate) {
+        filters.push('CONVERT(DATE, r.RECEIPT_CREATED_DATE) >= CONVERT(DATE, ?)');
+        params.push(fromDate);
+    }
+    if (toDate) {
+        filters.push('CONVERT(DATE, r.RECEIPT_CREATED_DATE) <= CONVERT(DATE, ?)');
+        params.push(toDate);
+    }
+    if (q) {
+        filters.push(`(
+            c.CUSTOMER_NAME COLLATE Latin1_General_CI_AI LIKE ?
+            OR c.CUSTOMER_PHONE LIKE ?
+            OR c.CUSTOMER_EMAIL COLLATE Latin1_General_CI_AI LIKE ?
+            OR CAST(r.RECEIPT_ID AS NVARCHAR(20)) LIKE ?
+        )`);
+        const token = `%${q}%`;
+        params.push(token, token, token, token);
+    }
+    const whereClause = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
+
     // Count query
-    const countResult = await db.raw('SELECT COUNT(*) as count FROM RECEIPT');
+    const countResult = await db.raw(`
+        SELECT COUNT(*) as count
+        FROM RECEIPT r
+        LEFT JOIN CUSTOMER c ON r.CUSTOMER_ID = c.CUSTOMER_ID
+        ${whereClause}
+    `, params);
     const total = countResult[0]?.count || 0;
 
     // Build ORDER BY based on sort parameter
@@ -41,9 +92,10 @@ export async function getAll({ branchId = null, status = null, page = 1, limit =
         LEFT JOIN CUSTOMER c ON r.CUSTOMER_ID = c.CUSTOMER_ID
         LEFT JOIN BRANCH b ON r.BRANCH_ID = b.BRANCH_ID
         LEFT JOIN EMPLOYEE e ON r.RECEPTIONIST_ID = e.EMPLOYEE_ID
+        ${whereClause}
         ${orderBy}
         OFFSET ${offset} ROWS FETCH NEXT ${limit} ROWS ONLY
-    `);
+    `, params);
 
     return { receipts, total, page, limit };
 }

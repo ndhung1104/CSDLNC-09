@@ -9,14 +9,17 @@ const router = Router();
 // List receipts with sorting (drafts first by default)
 router.get('/', requireAnyEmployee(), async (req, res) => {
     const emp = req.session.employee;
-    const { status, page = 1, sort = 'status' } = req.query;
+    const { status = '', page = 1, sort = 'status', fromDate = '', toDate = '', q = '' } = req.query;
     try {
-        const { receipts, total, limit } = await receiptModel.getAll({ status, page: parseInt(page), sort });
+        const { receipts, total, limit } = await receiptModel.getAll({ status, fromDate: fromDate || null, toDate: toDate || null, q: q || '', page: parseInt(page), sort });
         const totalPages = Math.ceil(total / limit);
         res.render('receipts/list', {
             title: 'Hóa đơn',
             receipts,
             status,
+            fromDate,
+            toDate,
+            q,
             sort,
             page: parseInt(page),
             totalPages,
@@ -28,7 +31,10 @@ router.get('/', requireAnyEmployee(), async (req, res) => {
         res.render('receipts/list', {
             title: 'Hóa đơn',
             receipts: [],
-            status: '',
+            status: status || '',
+            fromDate,
+            toDate,
+            q,
             sort: 'status',
             page: 1,
             totalPages: 0,
