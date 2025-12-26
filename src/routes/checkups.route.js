@@ -66,7 +66,13 @@ router.get('/:id', requireAnyEmployee(), async (req, res) => {
         if (!checkup) return res.redirect('/checkups');
         const prescriptionItems = await checkupModel.getPrescriptionItems(req.params.id);
         const { products: medicines } = await productModel.getMedicines({ page: 1, limit: 500 });
-        res.render('checkups/detail', { title: `Phiếu khám #${checkup.CHECK_UP_ID}`, checkup, prescriptionItems, medicines, error: req.query.error || null, success: req.query.success || null, employee: req.session.employee });
+        const plansResult = await productModel.getVaccinationPlans({ page: 1, limit: 500 });
+        const vaccinationPlans = Array.isArray(plansResult?.plans)
+            ? plansResult.plans
+            : Array.isArray(plansResult)
+                ? plansResult
+                : [];
+        res.render('checkups/detail', { title: `Phiếu khám #${checkup.CHECK_UP_ID}`, checkup, prescriptionItems, medicines, vaccinationPlans, error: req.query.error || null, success: req.query.success || null, employee: req.session.employee });
     } catch (err) {
         res.redirect('/checkups');
     }
@@ -87,7 +93,7 @@ router.post('/:id/update', requireAnyEmployee(), async (req, res) => {
 // Replace prescription items for a checkup
 router.post('/:id/prescription', requireRole('VET', 'MGR', 'DIRECTOR'), async (req, res) => {
     try {
-        const rawIds = req.body.medicineId || [];
+        const rawIds = req.body.itemId || req.body.medicineId || [];
         const rawQtys = req.body.quantity || [];
         const ids = Array.isArray(rawIds) ? rawIds : [rawIds];
         const qtys = Array.isArray(rawQtys) ? rawQtys : [rawQtys];

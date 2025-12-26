@@ -97,7 +97,7 @@ class="badge bg-<%= isCompleted ? 'success' : 'warning' %>">
                                             <thead>
                                                 <tr>
                                                     <th>#</th>
-                                                    <th>Medicine</th>
+                                                    <th>Item</th>
                                                     <th>Quantity</th>
                                                 </tr>
                                             </thead>
@@ -117,19 +117,32 @@ class="badge bg-<%= isCompleted ? 'success' : 'warning' %>">
                                 <% } %>
 
                                 <% if (employee && ['VET', 'MGR', 'DIRECTOR'].includes(employee.position)) { %>
-                                    <% if (medicines && medicines.length > 0) { %>
+                                    <% const planOptions = Array.isArray(vaccinationPlans) ? vaccinationPlans : []; %>
+                                    <% const hasPrescriptionItems = (medicines && medicines.length > 0) || (planOptions.length > 0); %>
+                                    <% if (hasPrescriptionItems) { %>
                                         <form method="POST" action="/checkups/<%= checkup.CHECK_UP_ID %>/prescription">
                                             <div id="prescriptionRows">
                                                 <% const rows = (prescriptionItems && prescriptionItems.length > 0) ? prescriptionItems : [{ productId: '', quantity: 1 }]; %>
                                                 <% rows.forEach((row) => { %>
                                                     <div class="row g-2 align-items-end prescription-row mb-2">
                                                         <div class="col-md-7">
-                                                            <label class="form-label">Medicine</label>
-                                                            <select class="form-select" name="medicineId" required>
-                                                                <option value="">-- Select medicine --</option>
-                                                                <% medicines.forEach(m => { %>
-                                                                    <option value="<%= m.id %>" <%= String(m.id) === String(row.productId) ? 'selected' : '' %>><%= m.name %></option>
-                                                                <% }) %>
+                                                            <label class="form-label">Item</label>
+                                                            <select class="form-select" name="itemId" required>
+                                                                <option value="">-- Select item --</option>
+                                                                <% if (medicines && medicines.length > 0) { %>
+                                                                    <optgroup label="Medicines">
+                                                                        <% medicines.forEach(m => { %>
+                                                                            <option value="<%= m.id %>" <%= String(m.id) === String(row.productId) ? 'selected' : '' %>><%= m.name %></option>
+                                                                        <% }) %>
+                                                                    </optgroup>
+                                                                <% } %>
+                                                                <% if (planOptions.length > 0) { %>
+                                                                    <optgroup label="Vaccination plans">
+                                                                        <% planOptions.forEach(p => { %>
+                                                                            <option value="<%= p.id %>" <%= String(p.id) === String(row.productId) ? 'selected' : '' %>><%= p.name %></option>
+                                                                        <% }) %>
+                                                                    </optgroup>
+                                                                <% } %>
                                                             </select>
                                                         </div>
                                                         <div class="col-md-3">
@@ -148,7 +161,7 @@ class="badge bg-<%= isCompleted ? 'success' : 'warning' %>">
                                             </div>
                                         </form>
                                     <% } else { %>
-                                        <p class="text-muted">No medicines available.</p>
+                                        <p class="text-muted">No items available.</p>
                                     <% } %>
                                 <% } %>
                             </div>
@@ -168,7 +181,7 @@ class="badge bg-<%= isCompleted ? 'success' : 'warning' %>">
                 const template = rows.querySelector('.prescription-row');
                 if (!template) return;
                 const clone = template.cloneNode(true);
-                const select = clone.querySelector('select[name=\"medicineId\"]');
+                const select = clone.querySelector('select[name=\"itemId\"]');
                 const qty = clone.querySelector('input[name=\"quantity\"]');
                 if (select) select.value = '';
                 if (qty) qty.value = 1;
@@ -181,7 +194,7 @@ class="badge bg-<%= isCompleted ? 'success' : 'warning' %>">
                 if (!row) return;
                 const allRows = rows.querySelectorAll('.prescription-row');
                 if (allRows.length <= 1) {
-                    const select = row.querySelector('select[name=\"medicineId\"]');
+                    const select = row.querySelector('select[name=\"itemId\"]');
                     const qty = row.querySelector('input[name=\"quantity\"]');
                     if (select) select.value = '';
                     if (qty) qty.value = 1;

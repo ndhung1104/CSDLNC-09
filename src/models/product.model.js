@@ -48,9 +48,12 @@ export async function getAll({ search = '', branchId = null, page = 1, limit = 2
 // Get medicines with optional search (avoid hard-coded PRODUCT_ID ranges)
 export async function getMedicines({ search = '', branchId = null, page = 1, limit = 20 } = {}) {
     const offset = (page - 1) * limit;
+    const prescriptionProducts = db('PRESCRIPTION_DETAIL')
+        .select('PRODUCT_ID')
+        .whereNotIn('PRODUCT_ID', db('VACCINATION_PLAN').select('VACCINATION_PLAN_ID'));
     const medicineFilter = function () {
         this.whereRaw('PRODUCT.PRODUCT_NAME COLLATE Latin1_General_CI_AI LIKE ?', ['Thuoc%'])
-            .orWhereIn('PRODUCT.PRODUCT_ID', db('PRESCRIPTION_DETAIL').select('PRODUCT_ID'));
+            .orWhereIn('PRODUCT.PRODUCT_ID', prescriptionProducts);
     };
 
     let countQuery = db('SALES_PRODUCT')
@@ -93,6 +96,39 @@ export async function getMedicines({ search = '', branchId = null, page = 1, lim
     }
 
     return { products, total: total?.count || 0, page, limit };
+}
+
+// Get vaccination plans with optional search
+export async function getVaccinationPlans({ search = '', page = 1, limit = 20 } = {}) {
+    const offset = (page - 1) * limit;
+
+    let countQuery = db('VACCINATION_PLAN')
+        .join('PRODUCT', 'VACCINATION_PLAN.VACCINATION_PLAN_ID', 'PRODUCT.PRODUCT_ID');
+
+    let dataQuery = db('VACCINATION_PLAN')
+        .join('PRODUCT', 'VACCINATION_PLAN.VACCINATION_PLAN_ID', 'PRODUCT.PRODUCT_ID')
+        .select(
+            'VACCINATION_PLAN.VACCINATION_PLAN_ID as id',
+            'PRODUCT.PRODUCT_NAME as name',
+            'VACCINATION_PLAN.VACCINATION_PLAN_DURATION as duration',
+            'VACCINATION_PLAN.VACCINATION_PLAN_PRICE as price'
+        );
+
+    if (search) {
+        const searchCondition = function () {
+            this.where('PRODUCT.PRODUCT_NAME', 'like', `%${search}%`);
+        };
+        countQuery = countQuery.where(searchCondition);
+        dataQuery = dataQuery.where(searchCondition);
+    }
+
+    const total = await countQuery.count('* as count').first();
+    const plans = await dataQuery
+        .orderBy('PRODUCT.PRODUCT_NAME', 'asc')
+        .offset(offset)
+        .limit(limit);
+
+    return { plans, total: total?.count || 0, page, limit };
 }
 
 // Get product by ID with stock at all branches
