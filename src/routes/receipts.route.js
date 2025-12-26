@@ -3,6 +3,7 @@ import { requireRole, requireAnyEmployee } from '../middleware/auth.middleware.j
 import * as receiptModel from '../models/receipt.model.js';
 import * as customerModel from '../models/customer.model.js';
 import * as petModel from '../models/pet.model.js';
+import * as checkupModel from '../models/checkup.model.js';
 
 const router = Router();
 
@@ -182,6 +183,84 @@ router.post('/:id/items/:itemId/delete', requireAnyEmployee(), async (req, res) 
             itemId: parseInt(req.params.itemId)
         });
         res.redirect(`/receipts/${req.params.id}?success=Đã+xóa+sản+phẩm`);
+    } catch (err) {
+        console.error(err);
+        res.redirect(`/receipts/${req.params.id}?error=${encodeURIComponent(err.message)}`);
+    }
+});
+
+// Add all items from a checkup to a receipt
+router.post('/:id/items/from-checkup', requireAnyEmployee(), async (req, res) => {
+    try {
+        const receiptId = parseInt(req.params.id);
+        const checkupId = parseInt(req.body.checkupId);
+        if (!Number.isFinite(receiptId) || !Number.isFinite(checkupId)) {
+            throw new Error('Invalid checkup ID.');
+        }
+
+        const receiptInfo = await receiptModel.getReceiptInfo(receiptId);
+        if (!receiptInfo) {
+            throw new Error('Receipt not found.');
+        }
+        const normalizedStatus = String(receiptInfo.status || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase();
+        const isUnpaid = normalizedStatus.includes('chua') || normalizedStatus.includes('cho') || normalizedStatus.includes('pending');
+        if (!isUnpaid) {
+            throw new Error('Receipt is already paid.');
+        }
+
+        const checkup = await checkupModel.getById(checkupId);
+        if (!checkup) {
+            throw new Error('Checkup not found.');
+        }
+
+        const checkupCustomerId = checkup.CUSTOMER_ID || checkup.customerId;
+        if (receiptInfo.customerId && checkupCustomerId && receiptInfo.customerId !== checkupCustomerId) {
+            throw new Error('Checkup customer does not match receipt.');
+        }
+
+        const items = await checkupModel.getPrescriptionItems(checkupId);
+        const petId = checkup.PET_ID || checkup.petId || null;
+
+        const medicalServiceId = checkup.MEDICAL_SERVICE || checkup.medicalServiceId;
+        if (medicalServiceId) {
+            await receiptModel.addItem({
+                receiptId,
+                productId: medicalServiceId,
+                quantity: 1,
+                petId
+            });
+        }
+
+        for (const item of items) {
+            const plan = await receiptModel.getVaccinationPlanById(item.productId);
+            if (plan) {
+                if (!petId) {
+                    throw new Error('Pet is required for vaccination plans.');
+                }
+                if (!receiptInfo.customerId) {
+                    throw new Error('Receipt customer is required for vaccination plans.');
+                }
+                await receiptModel.addVaccinationPlanItem({
+                    receiptId,
+                    planId: item.productId,
+                    petId,
+                    customerId: receiptInfo.customerId
+                });
+                continue;
+            }
+
+            await receiptModel.addItem({
+                receiptId,
+                productId: item.productId,
+                quantity: item.quantity || 1,
+                petId
+            });
+        }
+
+        res.redirect(`/receipts/${receiptId}?success=Da+them+tat+ca+tu+phieu+kham`);
     } catch (err) {
         console.error(err);
         res.redirect(`/receipts/${req.params.id}?error=${encodeURIComponent(err.message)}`);

@@ -84,6 +84,7 @@ export async function getById(id) {
         SELECT 
             c.*,
             p.PET_NAME as petName,
+            cu.CUSTOMER_ID as CUSTOMER_ID,
             cu.CUSTOMER_NAME as customerName,
             e.EMPLOYEE_NAME as vetName,
             b.BRANCH_NAME as branchName,
