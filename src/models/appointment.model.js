@@ -150,7 +150,7 @@ export async function getAvailableVets({ branchId, appointmentDate, appointmentT
     .where('vs.BRANCH_ID', branchId)
     .andWhere('vs.DAY_OF_WEEK', dayOfWeek)
     .andWhereRaw('? >= vs.START_TIME', [timeValue])
-    .andWhereRaw('DATEADD(MINUTE, vs.SLOT_MINUTES, ?) <= vs.END_TIME', [timeValue])
+    .andWhereRaw('CAST(DATEADD(MINUTE, vs.SLOT_MINUTES, CAST(? AS time)) AS time) <= vs.END_TIME', [timeValue])
     .andWhere('e.EMPLOYEE_POSITION', 'VET')
     .whereNotExists(function () {
       this.select(1)
