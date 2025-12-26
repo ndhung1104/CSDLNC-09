@@ -16,7 +16,7 @@
 
 <section class="py-4">
   <div class="container">
-    <% if (error) { %>
+    <% if (typeof error !== 'undefined' && error) { %>
       <div class="alert alert-danger"><%= error %></div>
     <% } %>
     <% if (!product) { %>

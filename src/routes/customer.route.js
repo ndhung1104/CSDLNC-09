@@ -1,12 +1,4 @@
 import { Router } from 'express';
-import {
-  getCustomerDashboardData,
-  getCustomerAppointmentsData,
-  getCustomerNewAppointmentData,
-  getCustomerPetsData,
-  getCustomerReceiptsData,
-} from '../services/demoData.service.js';
-
 const basePath = '/customer';
 const router = Router();
 
@@ -22,58 +14,37 @@ function renderCustomerPage(res, view, options = {}) {
   });
 }
 
+function redirectToGuest(res, path = '') {
+  const target = path ? `/guest/customer/${path}` : '/guest/customer/';
+  res.redirect(target);
+}
+
 router.get('/', (_req, res) => {
-  renderCustomerPage(res, 'customer/home', {
-    title: 'Home',
-    user: null,
-  });
+  redirectToGuest(res);
 });
 
 router.get('/login', (_req, res) => {
-  renderCustomerPage(res, 'customer/login', {
-    title: 'Login',
-    user: null,
-  });
+  redirectToGuest(res, 'login');
 });
 
 router.get('/dashboard', (_req, res) => {
-  const data = getCustomerDashboardData();
-  renderCustomerPage(res, 'customer/dashboard', {
-    title: 'Dashboard',
-    ...data,
-  });
+  redirectToGuest(res, 'dashboard');
 });
 
 router.get('/appointments', (_req, res) => {
-  const data = getCustomerAppointmentsData();
-  renderCustomerPage(res, 'customer/appointments', {
-    title: 'Appointments',
-    ...data,
-  });
+  redirectToGuest(res, 'appointments');
 });
 
 router.get('/appointments/new', (_req, res) => {
-  const data = getCustomerNewAppointmentData();
-  renderCustomerPage(res, 'customer/appointment-new', {
-    title: 'New Appointment',
-    ...data,
-  });
+  redirectToGuest(res, 'appointments/new');
 });
 
 router.get('/pets', (_req, res) => {
-  const data = getCustomerPetsData();
-  renderCustomerPage(res, 'customer/pets', {
-    title: 'My Pets',
-    ...data,
-  });
+  redirectToGuest(res, 'pets');
 });
 
 router.get('/receipts', (_req, res) => {
-  const data = getCustomerReceiptsData();
-  renderCustomerPage(res, 'customer/receipts', {
-    title: 'Receipts',
-    ...data,
-  });
+  redirectToGuest(res, 'receipts');
 });
 
 export default router;
