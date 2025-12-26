@@ -99,6 +99,57 @@
                                     </tbody>
                                 </table>
                             </div>
+                            <% if (totalPages> 1) { %>
+                                <div class="card-footer d-flex justify-content-center pt-3">
+                                    <nav>
+                                        <ul class="pagination">
+                                            <li class="page-item <%= page <= 1 ? 'disabled' : '' %>">
+                                                <a class="page-link"
+                                                    href="?page=<%= page - 1 %>&q=<%= q || '' %>&status=<%= status || '' %>&fromDate=<%= fromDate || '' %>&toDate=<%= toDate || '' %>">Trước</a>
+                                            </li>
+                                            <% let start=Math.max(1, page - 1); let end=Math.min(totalPages,
+                                                page + 1); if (start> 1) { %>
+                                                <li class="page-item">
+                                                    <a class="page-link"
+                                                        href="?page=1&q=<%= q || '' %>&status=<%= status || '' %>&fromDate=<%= fromDate || '' %>&toDate=<%= toDate || '' %>">1</a>
+                                                </li>
+                                                <% if (start> 2) { %>
+                                                    <li class="page-item disabled"><span class="page-link">...</span>
+                                                    </li>
+                                                    <% } %>
+                                                        <% } %>
+
+                                                            <% for(let i=start; i <=end; i++) { %>
+                                                                <li
+                                                                    class="page-item <%= page === i ? 'active' : '' %>">
+                                                                    <a class="page-link"
+                                                                        href="?page=<%= i %>&q=<%= q || '' %>&status=<%= status || '' %>&fromDate=<%= fromDate || '' %>&toDate=<%= toDate || '' %>">
+                                                                        <%= i %>
+                                                                    </a>
+                                                                </li>
+                                                                <% } %>
+
+                                                                    <% if (end < totalPages) { %>
+                                                                        <% if (end < totalPages - 1) { %>
+                                                                            <li class="page-item disabled"><span
+                                                                                    class="page-link">...</span></li>
+                                                                            <% } %>
+                                                                                <li class="page-item">
+                                                                                    <a class="page-link"
+                                                                                        href="?page=<%= totalPages %>&q=<%= q || '' %>&status=<%= status || '' %>&fromDate=<%= fromDate || '' %>&toDate=<%= toDate || '' %>">
+                                                                                        <%= totalPages %>
+                                                                                    </a>
+                                                                                </li>
+                                                                                <% } %>
+                                                                                    <li
+                                                                                        class="page-item <%= page >= totalPages ? 'disabled' : '' %>">
+                                                                                        <a class="page-link"
+                                                                                            href="?page=<%= page + 1 %>&q=<%= q || '' %>&status=<%= status || '' %>&fromDate=<%= fromDate || '' %>&toDate=<%= toDate || '' %>">Sau</a>
+                                                                                    </li>
+                                        </ul>
+                                    </nav>
+                                </div>
+                                <% } %>
                         </div>
                     </main>
             </div>

@@ -80,6 +80,57 @@
                                     </tbody>
                                 </table>
                             </div>
+                            <% if (totalPages> 1) { %>
+                                <div class="card-footer d-flex justify-content-center pt-3">
+                                    <nav>
+                                        <ul class="pagination">
+                                            <li class="page-item <%= page <= 1 ? 'disabled' : '' %>">
+                                                <a class="page-link"
+                                                    href="?page=<%= page - 1 %>&search=<%= search || '' %>&searchBy=<%= typeof searchBy !== 'undefined' ? searchBy : 'pet' %>">Trước</a>
+                                            </li>
+                                            <% let start=Math.max(1, page - 1); let end=Math.min(totalPages,
+                                                page + 1); if (start> 1) { %>
+                                                <li class="page-item">
+                                                    <a class="page-link"
+                                                        href="?page=1&search=<%= search || '' %>&searchBy=<%= typeof searchBy !== 'undefined' ? searchBy : 'pet' %>">1</a>
+                                                </li>
+                                                <% if (start> 2) { %>
+                                                    <li class="page-item disabled"><span class="page-link">...</span>
+                                                    </li>
+                                                    <% } %>
+                                                        <% } %>
+
+                                                            <% for(let i=start; i <=end; i++) { %>
+                                                                <li
+                                                                    class="page-item <%= page === i ? 'active' : '' %>">
+                                                                    <a class="page-link"
+                                                                        href="?page=<%= i %>&search=<%= search || '' %>&searchBy=<%= typeof searchBy !== 'undefined' ? searchBy : 'pet' %>">
+                                                                        <%= i %>
+                                                                    </a>
+                                                                </li>
+                                                                <% } %>
+
+                                                                    <% if (end < totalPages) { %>
+                                                                        <% if (end < totalPages - 1) { %>
+                                                                            <li class="page-item disabled"><span
+                                                                                    class="page-link">...</span></li>
+                                                                            <% } %>
+                                                                                <li class="page-item">
+                                                                                    <a class="page-link"
+                                                                                        href="?page=<%= totalPages %>&search=<%= search || '' %>&searchBy=<%= typeof searchBy !== 'undefined' ? searchBy : 'pet' %>">
+                                                                                        <%= totalPages %>
+                                                                                    </a>
+                                                                                </li>
+                                                                                <% } %>
+                                                                                    <li
+                                                                                        class="page-item <%= page >= totalPages ? 'disabled' : '' %>">
+                                                                                        <a class="page-link"
+                                                                                            href="?page=<%= page + 1 %>&search=<%= search || '' %>&searchBy=<%= typeof searchBy !== 'undefined' ? searchBy : 'pet' %>">Sau</a>
+                                                                                    </li>
+                                        </ul>
+                                    </nav>
+                                </div>
+                                <% } %>
                         </div>
                     </main>
             </div>

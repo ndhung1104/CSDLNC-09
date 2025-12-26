@@ -10,6 +10,7 @@ export async function getAll({
     page = 1,
     limit = 20
 } = {}) {
+    const offset = (page - 1) * limit;
     const filters = [];
     const params = [];
     if (vetId != null) {
@@ -51,9 +52,10 @@ export async function getAll({
     `, params);
     const total = countResult[0]?.count || 0;
 
-    // Data query using raw SQL with TOP (simpler for SQL Server)
+    // Data query with pagination
+    const dataParams = [...params, offset, limit];
     const checkups = await db.raw(`
-        SELECT TOP (${limit})
+        SELECT
             c.CHECK_UP_ID as id,
             c.STATUS as status,
             c.SYMPTOMS as symptoms,
@@ -70,7 +72,8 @@ export async function getAll({
         LEFT JOIN EMPLOYEE e ON c.VET_ID = e.EMPLOYEE_ID
         ${whereClause}
         ORDER BY c.CHECK_UP_ID DESC
-    `, params);
+        OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
+    `, dataParams);
 
     return { checkups, total, page, limit };
 }
