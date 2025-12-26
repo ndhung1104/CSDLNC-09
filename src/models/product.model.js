@@ -153,6 +153,16 @@ export async function getById(id) {
     return { ...product, stocks };
 }
 
+// Get stock quantity for a sales product at a branch
+export async function getBranchStock({ productId, branchId }) {
+    const result = await db('BRANCH_STOCK')
+        .select('QUANTITY as quantity')
+        .where('BRANCH_ID', branchId)
+        .where('SALES_PRODUCT_ID', productId)
+        .first();
+    return result?.quantity ?? null;
+}
+
 // Retail purchase - Use Case 4
 // Use stored procedure with a table variable to keep spending updates centralized.
 export async function purchase({ productId, quantity, customerId, branchId, employeeId, paymentMethod = 'Cash' }) {

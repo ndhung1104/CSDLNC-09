@@ -3,8 +3,8 @@
   <div class="container">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
       <div>
-        <h2 class="mb-0">Buy Product</h2>
-        <p class="text-muted mb-0">Complete your purchase</p>
+        <h2 class="mb-0">Add to Cart</h2>
+        <p class="text-muted mb-0">Select branch and quantity</p>
       </div>
       <a href="<%= bp %>/products" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left me-2"></i>
@@ -58,7 +58,7 @@
         <div class="col-lg-6">
           <div class="customer-card card h-100">
             <div class="card-body">
-              <h5 class="card-title mb-3">Purchase Details</h5>
+              <h5 class="card-title mb-3">Cart Details</h5>
               <form method="POST" action="<%= bp %>/products/<%= product.id %>/purchase">
                 <div class="mb-3">
                   <label class="form-label">Branch <span class="text-danger">*</span></label>
@@ -90,7 +90,7 @@
                   >
                   <div class="form-text">Available stock: <span id="stockDisplay">0</span></div>
                 </div>
-                <button type="submit" class="btn btn-primary w-100">Place Order</button>
+                <button type="submit" class="btn btn-primary w-100">Add to Cart</button>
               </form>
             </div>
           </div>

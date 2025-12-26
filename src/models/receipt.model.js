@@ -1,5 +1,17 @@
 import db from '../utils/db.js';
 
+function normalizeStatus(value) {
+    return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+}
+
+function isDraftStatus(status) {
+    const normalized = normalizeStatus(status);
+    return normalized.includes('chua') || normalized.includes('cho') || normalized.includes('pending');
+}
+
 // Get all receipts - sorted by status (drafts first), then by date
 export async function getAll({
     branchId = null,
@@ -153,7 +165,7 @@ export async function addItem({ receiptId, productId, quantity, petId = null, pr
     if (!receipt) {
         throw new Error('Receipt not found.');
     }
-    if (receipt.RECEIPT_STATUS !== 'Chờ thanh toán') {
+    if (!isDraftStatus(receipt.RECEIPT_STATUS)) {
         throw new Error('Receipt is already paid.');
     }
 
@@ -223,7 +235,7 @@ export async function removeItem({ receiptId, itemId }) {
     if (!receipt) {
         throw new Error('Receipt not found.');
     }
-    if (receipt.RECEIPT_STATUS !== 'Chờ thanh toán') {
+    if (!isDraftStatus(receipt.RECEIPT_STATUS)) {
         throw new Error('Receipt is already paid.');
     }
 
@@ -233,6 +245,84 @@ export async function removeItem({ receiptId, itemId }) {
     `, [receiptId, itemId]);
 
     // Recalculate total
+    await db.raw(`
+        UPDATE RECEIPT
+        SET RECEIPT_TOTAL_PRICE = (
+            SELECT ISNULL(SUM(RECEIPT_ITEM_AMOUNT * RECEIPT_ITEM_PRICE), 0)
+            FROM RECEIPT_DETAIL WHERE RECEIPT_ID = ?
+        )
+        WHERE RECEIPT_ID = ?
+    `, [receiptId, receiptId]);
+}
+
+// Get latest draft receipt for a customer
+export async function getDraftByCustomer(customerId) {
+    const result = await db.raw(`
+        SELECT TOP 1
+            r.RECEIPT_ID as id,
+            r.RECEIPT_STATUS as status,
+            r.RECEIPT_CREATED_DATE as createdDate,
+            r.RECEIPT_TOTAL_PRICE as total,
+            r.BRANCH_ID as branchId
+        FROM RECEIPT r
+        WHERE r.CUSTOMER_ID = ?
+          AND (
+            r.RECEIPT_STATUS COLLATE Latin1_General_CI_AI LIKE '%cho%'
+            OR r.RECEIPT_STATUS COLLATE Latin1_General_CI_AI LIKE '%chua%'
+            OR r.RECEIPT_STATUS COLLATE Latin1_General_CI_AI LIKE '%pending%'
+          )
+        ORDER BY r.RECEIPT_CREATED_DATE DESC
+    `, [customerId]);
+    return result[0] || null;
+}
+
+// Get a receipt item for updates
+export async function getReceiptItem({ receiptId, itemId }) {
+    return db('RECEIPT_DETAIL')
+        .select(
+            'RECEIPT_ITEM_ID as itemId',
+            'RECEIPT_ID as receiptId',
+            'PRODUCT_ID as productId',
+            'RECEIPT_ITEM_AMOUNT as quantity'
+        )
+        .where('RECEIPT_ID', receiptId)
+        .where('RECEIPT_ITEM_ID', itemId)
+        .first();
+}
+
+export async function getReceiptItemByProduct({ receiptId, productId }) {
+    return db('RECEIPT_DETAIL')
+        .select(
+            'RECEIPT_ITEM_ID as itemId',
+            'RECEIPT_ID as receiptId',
+            'PRODUCT_ID as productId',
+            'RECEIPT_ITEM_AMOUNT as quantity'
+        )
+        .where('RECEIPT_ID', receiptId)
+        .where('PRODUCT_ID', productId)
+        .first();
+}
+
+// Update receipt item quantity and recalc total
+export async function updateItemQuantity({ receiptId, itemId, quantity }) {
+    const receipt = await db('RECEIPT')
+        .select('RECEIPT_STATUS')
+        .where('RECEIPT_ID', receiptId)
+        .first();
+
+    if (!receipt) {
+        throw new Error('Receipt not found.');
+    }
+    if (!isDraftStatus(receipt.RECEIPT_STATUS)) {
+        throw new Error('Receipt is already paid.');
+    }
+
+    await db.raw(`
+        UPDATE RECEIPT_DETAIL
+        SET RECEIPT_ITEM_AMOUNT = ?
+        WHERE RECEIPT_ID = ? AND RECEIPT_ITEM_ID = ?
+    `, [quantity, receiptId, itemId]);
+
     await db.raw(`
         UPDATE RECEIPT
         SET RECEIPT_TOTAL_PRICE = (
@@ -382,7 +472,7 @@ export async function addVaccinationPlanItem({ receiptId, planId, petId, custome
         if (!receipt) {
             throw new Error('Receipt not found.');
         }
-        if (receipt.RECEIPT_STATUS !== 'Chờ thanh toán') {
+        if (!isDraftStatus(receipt.RECEIPT_STATUS)) {
             throw new Error('Receipt is already paid.');
         }
 

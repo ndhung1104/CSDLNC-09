@@ -4,7 +4,7 @@
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
       <div>
         <h2 class="mb-0">Products</h2>
-        <p class="text-muted mb-0">Search and purchase products</p>
+        <p class="text-muted mb-0">Search and add products</p>
       </div>
       <form class="d-flex" method="GET" action="<%= bp %>/products">
         <input
@@ -41,7 +41,7 @@
                     <strong><%= Number(product.price || 0).toLocaleString('vi-VN') %> VND</strong>
                   </div>
                   <a href="<%= bp %>/products/<%= product.id %>/purchase" class="btn btn-primary w-100">
-                    Buy Now
+                    Add to Cart
                   </a>
                 </div>
               </div>

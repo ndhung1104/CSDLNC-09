@@ -553,6 +553,133 @@ router.get('/receipts', requireCustomer, async (req, res) => {
   }
 });
 
+router.get('/cart', requireCustomer, async (req, res) => {
+  try {
+    const customerId = req.session.customer?.id;
+    const cartReceiptId = req.session.cartReceiptId;
+    let receipt = null;
+
+    if (cartReceiptId) {
+      const receiptInfo = await receiptModel.getReceiptInfo(cartReceiptId);
+      if (receiptInfo && receiptInfo.customerId === customerId) {
+        const normalizedStatus = String(receiptInfo.status || '')
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase();
+        const isUnpaid = normalizedStatus.includes('chua') || normalizedStatus.includes('cho') || normalizedStatus.includes('pending');
+        if (!isUnpaid) {
+          req.session.cartReceiptId = null;
+        } else {
+        receipt = await receiptModel.getById(cartReceiptId);
+        }
+      } else {
+        req.session.cartReceiptId = null;
+      }
+    }
+
+    renderCustomerPage(res, 'customer/cart', {
+      title: 'Cart',
+      receipt,
+      error: req.query.error || null,
+      success: req.query.success || null,
+    });
+  } catch (err) {
+    console.error('Guest cart error:', err);
+    renderCustomerPage(res, 'customer/cart', {
+      title: 'Cart',
+      receipt: null,
+      error: 'Unable to load cart',
+      success: null,
+    });
+  }
+});
+
+router.post('/cart/items/:itemId/update', requireCustomer, async (req, res) => {
+  try {
+    const customerId = req.session.customer?.id;
+    const receiptId = req.session.cartReceiptId ? parseInt(req.session.cartReceiptId) : NaN;
+    const itemId = parseInt(req.params.itemId);
+    const quantity = parseInt(req.body.quantity);
+
+    if (!Number.isFinite(receiptId) || !Number.isFinite(itemId) || !Number.isFinite(quantity) || quantity < 1) {
+      throw new Error('Invalid quantity.');
+    }
+
+    const receiptInfo = await receiptModel.getReceiptInfo(receiptId);
+    if (!receiptInfo || receiptInfo.customerId !== customerId) {
+      throw new Error('Receipt not found.');
+    }
+
+    const item = await receiptModel.getReceiptItem({ receiptId, itemId });
+    if (!item) {
+      throw new Error('Item not found.');
+    }
+
+    const stock = await productModel.getBranchStock({
+      productId: item.productId,
+      branchId: receiptInfo.branchId
+    });
+    if (stock != null && quantity > stock) {
+      throw new Error('Quantity exceeds available stock.');
+    }
+
+    await receiptModel.updateItemQuantity({ receiptId, itemId, quantity });
+    res.redirect('/guest/customer/cart?success=Updated');
+  } catch (err) {
+    console.error('Guest cart update error:', err);
+    res.redirect(`/guest/customer/cart?error=${encodeURIComponent(err.message)}`);
+  }
+});
+
+router.post('/cart/items/:itemId/delete', requireCustomer, async (req, res) => {
+  try {
+    const customerId = req.session.customer?.id;
+    const receiptId = req.session.cartReceiptId ? parseInt(req.session.cartReceiptId) : NaN;
+    const itemId = parseInt(req.params.itemId);
+    if (!Number.isFinite(receiptId) || !Number.isFinite(itemId)) {
+      throw new Error('Invalid item.');
+    }
+
+    const receiptInfo = await receiptModel.getReceiptInfo(receiptId);
+    if (!receiptInfo || receiptInfo.customerId !== customerId) {
+      throw new Error('Receipt not found.');
+    }
+
+    await receiptModel.removeItem({ receiptId, itemId });
+    res.redirect('/guest/customer/cart?success=Removed');
+  } catch (err) {
+    console.error('Guest cart delete error:', err);
+    res.redirect(`/guest/customer/cart?error=${encodeURIComponent(err.message)}`);
+  }
+});
+
+router.post('/cart/checkout', requireCustomer, async (req, res) => {
+  try {
+    const customerId = req.session.customer?.id;
+    const receiptId = req.session.cartReceiptId ? parseInt(req.session.cartReceiptId) : NaN;
+    if (!Number.isFinite(receiptId)) {
+      throw new Error('Invalid receipt.');
+    }
+
+    const receiptInfo = await receiptModel.getReceiptInfo(receiptId);
+    if (!receiptInfo || receiptInfo.customerId !== customerId) {
+      throw new Error('Receipt not found.');
+    }
+
+    const receipt = await receiptModel.getById(receiptId);
+    if (!receipt || !receipt.details || receipt.details.length === 0) {
+      throw new Error('Cart is empty.');
+    }
+
+    await receiptModel.complete(receiptId);
+    req.session.cartReceiptId = null;
+    res.redirect('/guest/customer/receipts');
+  } catch (err) {
+    console.error('Guest cart checkout error:', err);
+    res.redirect(`/guest/customer/cart?error=${encodeURIComponent(err.message)}`);
+  }
+});
+
 router.get('/products', requireCustomer, async (req, res) => {
   const { search = '', page = 1 } = req.query;
   try {
@@ -586,7 +713,7 @@ router.get('/products/:id/purchase', requireCustomer, async (req, res) => {
     const product = await productModel.getById(req.params.id);
     if (!product) return res.redirect('/guest/customer/products');
     renderCustomerPage(res, 'customer/product-purchase', {
-      title: `Buy ${product.name}`,
+      title: `Add to cart - ${product.name}`,
       product,
       error: null
     });
@@ -609,28 +736,83 @@ router.post('/products/:id/purchase', requireCustomer, async (req, res) => {
       throw new Error('Please select a branch and quantity.');
     }
 
-    const employee = await employeeModel.getReceptionistByBranch(branchIdNum)
-      || await employeeModel.getAnyEmployeeByBranch(branchIdNum);
-    if (!employee) {
-      throw new Error('No staff available for the selected branch.');
+    const stock = await productModel.getBranchStock({
+      productId: product.id,
+      branchId: branchIdNum
+    });
+    if (stock == null) {
+      throw new Error('No stock available for the selected branch.');
+    }
+    if (qty > stock) {
+      throw new Error('Quantity exceeds available stock.');
     }
 
-    await productModel.purchase({
-      productId: req.params.id,
-      quantity: qty,
-      customerId,
-      branchId: branchIdNum,
-      employeeId: employee.id
-    });
+    let receiptId = req.session.cartReceiptId ? parseInt(req.session.cartReceiptId) : null;
+    if (receiptId) {
+      const receiptInfo = await receiptModel.getReceiptInfo(receiptId);
+      if (!receiptInfo || receiptInfo.customerId !== customerId) {
+        receiptId = null;
+        req.session.cartReceiptId = null;
+      } else {
+        const normalizedStatus = String(receiptInfo.status || '')
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase();
+        const isUnpaid = normalizedStatus.includes('chua') || normalizedStatus.includes('cho') || normalizedStatus.includes('pending');
+        if (!isUnpaid) {
+          receiptId = null;
+          req.session.cartReceiptId = null;
+        } else if (receiptInfo.branchId && receiptInfo.branchId !== branchIdNum) {
+          throw new Error('Cart is tied to another branch.');
+        }
+      }
+    }
 
-    res.redirect('/guest/customer/receipts');
+    if (!receiptId) {
+      const employee = await employeeModel.getReceptionistByBranch(branchIdNum)
+        || await employeeModel.getAnyEmployeeByBranch(branchIdNum);
+      if (!employee) {
+        throw new Error('No staff available for the selected branch.');
+      }
+
+      receiptId = await receiptModel.createDraft({
+        customerId,
+        branchId: branchIdNum,
+        employeeId: employee.id
+      });
+      req.session.cartReceiptId = receiptId;
+    }
+
+    const existingItem = await receiptModel.getReceiptItemByProduct({
+      receiptId,
+      productId: product.id
+    });
+    if (existingItem) {
+      const nextQty = (existingItem.quantity || 0) + qty;
+      if (stock != null && nextQty > stock) {
+        throw new Error('Quantity exceeds available stock.');
+      }
+      await receiptModel.updateItemQuantity({
+        receiptId,
+        itemId: existingItem.itemId,
+        quantity: nextQty
+      });
+    } else {
+      await receiptModel.addItem({
+        receiptId,
+        productId: product.id,
+        quantity: qty
+      });
+    }
+
+    res.redirect('/guest/customer/cart?success=Added');
   } catch (err) {
     console.error('Guest product purchase submit error:', err);
     const product = await productModel.getById(req.params.id);
     renderCustomerPage(res, 'customer/product-purchase', {
-      title: `Buy ${product?.name || 'Product'}`,
+      title: `Add to cart - ${product?.name || 'Product'}`,
       product,
-      error: err.message || 'Unable to complete purchase'
+      error: err.message || 'Unable to add to cart'
     });
   }
 });

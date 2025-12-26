@@ -1,0 +1,101 @@
+<% const bp = typeof basePath !== 'undefined' ? basePath : '/customer'; %>
+<section class="py-4 bg-light">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div>
+        <h2 class="mb-0">Cart</h2>
+        <p class="text-muted mb-0">Review items before checkout</p>
+      </div>
+      <a href="<%= bp %>/products" class="btn btn-outline-secondary">
+        <i class="bi bi-bag me-2"></i>
+        Continue Shopping
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="py-4">
+  <div class="container">
+    <% if (error) { %>
+      <div class="alert alert-danger"><%= error %></div>
+    <% } %>
+    <% if (success) { %>
+      <div class="alert alert-success"><%= success %></div>
+    <% } %>
+
+    <% if (!receipt || !receipt.details || receipt.details.length === 0) { %>
+      <div class="text-center py-5">
+        <i class="bi bi-cart-x text-muted" style="font-size: 4rem;"></i>
+        <p class="text-muted mt-3">Your cart is empty</p>
+      </div>
+    <% } else { %>
+      <div class="card mb-4">
+        <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-3">
+          <div>
+            <div class="fw-bold">Receipt #<%= receipt.RECEIPT_ID %></div>
+            <div class="text-muted">Branch: <%= receipt.branchName || receipt.BRANCH_ID || 'N/A' %></div>
+          </div>
+          <div class="text-end">
+            <div class="text-muted">Total</div>
+            <div class="fs-5 fw-bold">
+              <%= receipt.RECEIPT_TOTAL_PRICE ? receipt.RECEIPT_TOTAL_PRICE.toLocaleString('vi-VN') + ' VND' : '0 VND' %>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0 align-middle">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Item</th>
+                <th>Price</th>
+                <th>Quantity</th>
+                <th>Total</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% receipt.details.forEach((item, idx) => { %>
+                <tr>
+                  <td><%= idx + 1 %></td>
+                  <td><%= item.productName || 'N/A' %></td>
+                  <td><%= item.RECEIPT_ITEM_PRICE ? item.RECEIPT_ITEM_PRICE.toLocaleString('vi-VN') + ' VND' : '-' %></td>
+                  <td>
+                    <form method="POST" action="<%= bp %>/cart/items/<%= item.RECEIPT_ITEM_ID %>/update" class="d-flex gap-2 align-items-center">
+                      <input type="hidden" name="receiptId" value="<%= receipt.RECEIPT_ID %>">
+                      <input type="number" class="form-control form-control-sm" name="quantity" min="1" value="<%= item.RECEIPT_ITEM_AMOUNT || 1 %>" style="max-width: 90px;">
+                      <button type="submit" class="btn btn-sm btn-outline-primary">Update</button>
+                    </form>
+                  </td>
+                  <td>
+                    <%= ((item.RECEIPT_ITEM_AMOUNT || 0) * (item.RECEIPT_ITEM_PRICE || 0)).toLocaleString('vi-VN') %> VND
+                  </td>
+                  <td>
+                    <form method="POST" action="<%= bp %>/cart/items/<%= item.RECEIPT_ITEM_ID %>/delete">
+                      <input type="hidden" name="receiptId" value="<%= receipt.RECEIPT_ID %>">
+                      <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remove this item?')">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+        <div class="card-footer d-flex justify-content-between align-items-center flex-wrap gap-3">
+          <div class="fw-bold">
+            Total: <%= receipt.RECEIPT_TOTAL_PRICE ? receipt.RECEIPT_TOTAL_PRICE.toLocaleString('vi-VN') + ' VND' : '0 VND' %>
+          </div>
+          <form method="POST" action="<%= bp %>/cart/checkout">
+            <input type="hidden" name="receiptId" value="<%= receipt.RECEIPT_ID %>">
+            <button type="submit" class="btn btn-success">Checkout</button>
+          </form>
+        </div>
+      </div>
+    <% } %>
+  </div>
+</section>
