@@ -169,6 +169,21 @@ export async function addItem({ receiptId, productId, quantity, petId = null, pr
         throw new Error('Receipt is already paid.');
     }
 
+    // Check stock for SALES_PRODUCT items
+    const stockCheck = await db.raw(`
+        SELECT bs.QUANTITY
+        FROM BRANCH_STOCK bs
+        JOIN RECEIPT r ON r.BRANCH_ID = bs.BRANCH_ID
+        WHERE r.RECEIPT_ID = ? AND bs.SALES_PRODUCT_ID = ?
+    `, [receiptId, productId]);
+
+    if (stockCheck.length > 0) {
+        const available = stockCheck[0].QUANTITY || 0;
+        if (available < quantity) {
+            throw new Error(`Không đủ tồn kho. Còn lại: ${available}, Yêu cầu: ${quantity}`);
+        }
+    }
+
     // The stored procedure expects a table-valued parameter, but we'll use direct INSERT
     // Get the max item ID for this receipt
     const maxResult = await db.raw(`
@@ -335,6 +350,15 @@ export async function updateItemQuantity({ receiptId, itemId, quantity }) {
 
 // Complete receipt and accumulate points using stored procedure
 export async function complete(receiptId) {
+    // Deduct stock for SALES_PRODUCT items
+    await db.raw(`
+        UPDATE s SET s.QUANTITY = s.QUANTITY - d.RECEIPT_ITEM_AMOUNT
+        FROM BRANCH_STOCK s
+        JOIN RECEIPT r ON r.BRANCH_ID = s.BRANCH_ID
+        JOIN RECEIPT_DETAIL d ON d.RECEIPT_ID = r.RECEIPT_ID
+        WHERE r.RECEIPT_ID = ? AND s.SALES_PRODUCT_ID = d.PRODUCT_ID
+    `, [receiptId]);
+
     await db.raw(`EXEC dbo.uspReceiptMarkCompletedAndAccumulate @ReceiptId = ?`, [receiptId]);
 }
 
