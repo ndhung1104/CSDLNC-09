@@ -448,21 +448,21 @@ router.post('/appointments/:id/cancel', requireCustomer, async (req, res) => {
 });
 
 router.get('/pets', requireCustomer, async (req, res) => {
-    try {
-        const customerId = req.session.customer?.id;
-        const pets = await petModel.getByCustomerId(customerId);
-        renderCustomerPage(res, 'customer/pets', {
-            title: 'My Pets',
-            pets,
-        });
-    } catch (err) {
-        console.error('Guest pets error:', err);
-        renderCustomerPage(res, 'customer/pets', {
-            title: 'My Pets',
-            pets: [],
-            error: 'Unable to load pets',
-        });
-    }
+  try {
+    const customerId = req.session.customer?.id;
+    const pets = await petModel.getByCustomerId(customerId);
+    renderCustomerPage(res, 'customer/pets', {
+      title: 'My Pets',
+      pets,
+    });
+  } catch (err) {
+    console.error('Guest pets error:', err);
+    renderCustomerPage(res, 'customer/pets', {
+      title: 'My Pets',
+      pets: [],
+      error: 'Unable to load pets',
+    });
+  }
 });
 
 router.get('/pets/:id/history', requireCustomer, async (req, res) => {
@@ -535,6 +535,48 @@ router.get('/pets/:id/history', requireCustomer, async (req, res) => {
   }
 });
 
+// Checkup detail for customer
+router.get('/checkups/:id', requireCustomer, async (req, res) => {
+  try {
+    const customerId = req.session.customer?.id;
+    const checkupId = parseInt(req.params.id);
+
+    const checkup = await checkupModel.getById(checkupId);
+    if (!checkup) {
+      return res.redirect('/guest/customer/pets');
+    }
+
+    // Verify ownership - checkup must belong to customer's pet
+    const customerCheckupId = checkup.CUSTOMER_ID || checkup.customerId;
+    if (customerCheckupId !== customerId) {
+      return res.redirect('/guest/customer/pets');
+    }
+
+    const prescriptionItems = await checkupModel.getPrescriptionItems(checkupId);
+
+    renderCustomerPage(res, 'customer/checkup-detail', {
+      title: 'Checkup Details',
+      checkup: {
+        id: checkup.CHECK_UP_ID || checkup.id,
+        date: checkup.CHECK_UP_DATE || checkup.date,
+        status: checkup.STATUS || checkup.status,
+        symptoms: checkup.SYMPTOMS || checkup.symptoms,
+        diagnosis: checkup.DIAGNOSIS || checkup.diagnosis,
+        followUpVisit: checkup.FOLLOW_UP_VISIT || checkup.followUpVisit,
+        petId: checkup.PET_ID || checkup.petId,
+        petName: checkup.petName,
+        vetName: checkup.vetName,
+        branchName: checkup.branchName,
+        serviceName: checkup.serviceName
+      },
+      prescriptionItems
+    });
+  } catch (err) {
+    console.error('Guest checkup detail error:', err);
+    res.redirect('/guest/customer/pets');
+  }
+});
+
 router.get('/receipts', requireCustomer, async (req, res) => {
   try {
     const customerId = req.session.customer?.id;
@@ -570,7 +612,7 @@ router.get('/cart', requireCustomer, async (req, res) => {
         if (!isUnpaid) {
           req.session.cartReceiptId = null;
         } else {
-        receipt = await receiptModel.getById(cartReceiptId);
+          receipt = await receiptModel.getById(cartReceiptId);
         }
       } else {
         req.session.cartReceiptId = null;

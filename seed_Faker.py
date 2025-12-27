@@ -24,7 +24,7 @@ BATCH_SIZE = 2000  # Smaller batch size to avoid memory issues
 # Docker Container SQL Server
 conn_str = (
     "DRIVER={ODBC Driver 18 for SQL Server};"
-    "SERVER=localhost,1433;"
+    "SERVER=127.0.0.1,1433;"
     "DATABASE=PETCAREX;"
     "UID=sa;"
     "PWD=PetCareX@2024;"

@@ -8,10 +8,6 @@
     </nav>
   </div>
   <div class="d-flex gap-2">
-    <button class="btn btn-outline-secondary btn-sm">
-      <i class="bi bi-download me-2"></i>
-      Export Report
-    </button>
     <button class="btn btn-primary btn-sm">
       <i class="bi bi-plus-circle me-2"></i>
       New Appointment
@@ -28,7 +24,9 @@
           <span class="badge bg-success-subtle text-success">+12%</span>
         </div>
         <h6 class="text-muted text-uppercase small mb-1">Total Customers</h6>
-        <h3 class="mb-0"><%= typeof stats !== 'undefined' && stats ? stats.totalCustomers : 0 %></h3>
+        <h3 class="mb-0">
+          <%= typeof stats !=='undefined' && stats ? stats.totalCustomers : 0 %>
+        </h3>
       </div>
     </div>
   </div>
@@ -40,7 +38,9 @@
           <span class="badge bg-success-subtle text-success">+8%</span>
         </div>
         <h6 class="text-muted text-uppercase small mb-1">Total Pets</h6>
-        <h3 class="mb-0"><%= typeof stats !== 'undefined' && stats ? stats.totalPets : 0 %></h3>
+        <h3 class="mb-0">
+          <%= typeof stats !=='undefined' && stats ? stats.totalPets : 0 %>
+        </h3>
       </div>
     </div>
   </div>
@@ -52,7 +52,9 @@
           <span class="badge bg-primary-subtle text-primary">Today</span>
         </div>
         <h6 class="text-muted text-uppercase small mb-1">Appointments Today</h6>
-        <h3 class="mb-0"><%= typeof stats !== 'undefined' && stats ? stats.appointmentsToday : 0 %></h3>
+        <h3 class="mb-0">
+          <%= typeof stats !=='undefined' && stats ? stats.appointmentsToday : 0 %>
+        </h3>
       </div>
     </div>
   </div>
@@ -64,7 +66,8 @@
           <span class="badge bg-success-subtle text-success">+15%</span>
         </div>
         <h6 class="text-muted text-uppercase small mb-1">Revenue (Month)</h6>
-        <h3 class="mb-0">$<%= typeof stats !== 'undefined' && stats ? stats.revenueMonth : 0 %></h3>
+        <h3 class="mb-0">$<%= typeof stats !=='undefined' && stats ? stats.revenueMonth : 0 %>
+        </h3>
       </div>
     </div>
   </div>
@@ -127,28 +130,44 @@
           </tr>
         </thead>
         <tbody>
-          <% if (typeof upcomingAppointments !== 'undefined' && upcomingAppointments && upcomingAppointments.length > 0) { %>
-            <% upcomingAppointments.forEach((appointment) => { %>
+          <% if (typeof upcomingAppointments !=='undefined' && upcomingAppointments && upcomingAppointments.length> 0) {
+            %>
+            <% upcomingAppointments.forEach((appointment)=> { %>
               <tr>
                 <td>
-                  <div><%= new Date(appointment.appointmentDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></div>
-                  <small class="text-muted"><%= appointment.appointmentTime %></small>
+                  <div>
+                    <%= new Date(appointment.appointmentDate).toLocaleDateString('en-US', { month: 'short' ,
+                      day: 'numeric' , year: 'numeric' }) %>
+                  </div>
+                  <small class="text-muted">
+                    <%= appointment.appointmentTime %>
+                  </small>
                 </td>
-                <td><%= appointment.customerName %></td>
-                <td><%= appointment.petName %></td>
-                <td><%= appointment.serviceName %></td>
-                <td><%= appointment.branchName %></td>
-                <td><span class="badge badge-status-<%= appointment.status.toLowerCase() %>"><%= appointment.status %></span></td>
+                <td>
+                  <%= appointment.customerName %>
+                </td>
+                <td>
+                  <%= appointment.petName %>
+                </td>
+                <td>
+                  <%= appointment.serviceName %>
+                </td>
+                <td>
+                  <%= appointment.branchName %>
+                </td>
+                <td><span class="badge badge-status-<%= appointment.status.toLowerCase() %>">
+                    <%= appointment.status %>
+                  </span></td>
                 <td class="text-end">
                   <button class="btn btn-sm btn-outline-primary" type="button">View</button>
                 </td>
               </tr>
-            <% }); %>
-          <% } else { %>
-            <tr>
-              <td colspan="7" class="text-center py-4 text-muted">No upcoming appointments</td>
-            </tr>
-          <% } %>
+              <% }); %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">No upcoming appointments</td>
+                  </tr>
+                  <% } %>
         </tbody>
       </table>
     </div>

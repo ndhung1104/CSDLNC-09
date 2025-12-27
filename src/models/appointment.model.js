@@ -85,6 +85,7 @@ export async function getServicesByBranch() {
   const rows = await db('BRANCH_SERVICE as bs')
     .join('SERVICE as s', 'bs.SERVICE_ID', 's.SERVICE_ID')
     .whereRaw('s.SERVICE_NAME COLLATE Latin1_General_CI_AI NOT LIKE ?', ['%ban le%'])
+    .whereRaw('s.SERVICE_NAME COLLATE Latin1_General_CI_AI NOT LIKE ?', ['%goi tiem%'])
     .select(
       'bs.BRANCH_ID as branchId',
       's.SERVICE_ID as id',

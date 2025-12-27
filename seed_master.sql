@@ -225,6 +225,10 @@ INSERT INTO EMPLOYEE (
 ('012345678908', N'Bác sĩ thú y 2',             N'Nữ',  '1987-07-18', 'emp8@petcarex.com',  'emp_pwd_0000000008', '2016-06-01', 21000000, 'VET',   2),
 ('012345678909', N'Bác sĩ thú y 3',             N'Nam', '1989-10-30', 'emp9@petcarex.com',  'emp_pwd_0000000009', '2017-09-01', 19000000, 'VET',   3),
 ('012345678910', N'Bác sĩ thú y 4',             N'Nữ',  '1991-12-05', 'emp10@petcarex.com', 'emp_pwd_0000000010', '2019-02-01', 18000000, 'VET',   4),
+('012345678916', N'Bác sĩ thú y 5',             N'Nam', '1988-03-15', 'emp16@petcarex.com', 'emp_pwd_0000000016', '2018-05-01', 19500000, 'VET',   1),
+('012345678917', N'Bác sĩ thú y 6',             N'Nữ',  '1990-06-20', 'emp17@petcarex.com', 'emp_pwd_0000000017', '2019-08-01', 18500000, 'VET',   2),
+('012345678918', N'Bác sĩ thú y 7',             N'Nam', '1986-09-10', 'emp18@petcarex.com', 'emp_pwd_0000000018', '2017-03-01', 20000000, 'VET',   3),
+('012345678919', N'Bác sĩ thú y 8',             N'Nữ',  '1992-01-25', 'emp19@petcarex.com', 'emp_pwd_0000000019', '2020-01-01', 17500000, 'VET',   4),
 
 ('012345678911', N'Quản lý chi nhánh Q1',       N'Nam', '1980-01-01', 'emp11@petcarex.com', 'emp_pwd_0000000011', '2010-01-01', 25000000, 'MGR',   1),
 ('012345678912', N'Quản lý chi nhánh Thủ Đức',  N'Nữ',  '1982-05-05', 'emp12@petcarex.com', 'emp_pwd_0000000012', '2012-04-01', 24000000, 'MGR',   2),
@@ -253,16 +257,14 @@ INSERT INTO VET_SCHEDULE (
     BRANCH_ID,
     DAY_OF_WEEK,
     START_TIME,
-    END_TIME,
-    SLOT_MINUTES
+    END_TIME
 )
 SELECT
     E.EMPLOYEE_ID,
     E.BRANCH_ID,
     D.DAY_OF_WEEK,
     '08:00',
-    '12:00',
-    30
+    '12:00'
 FROM EMPLOYEE E
 CROSS JOIN (VALUES (1),(2),(3),(4),(5),(6)) D(DAY_OF_WEEK)
 WHERE E.EMPLOYEE_POSITION = 'VET';
