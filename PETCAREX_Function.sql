@@ -986,30 +986,6 @@ BEGIN
 
     BEGIN TRY
         BEGIN TRAN;
-
-        ;WITH ReceiptYearly AS (
-            SELECT
-                r.CUSTOMER_ID,
-                [YEAR]    = @Year,
-                TotalSpent = SUM(r.RECEIPT_TOTAL_PRICE)
-            FROM RECEIPT r
-            WHERE r.RECEIPT_STATUS = N'Đã thanh toán'
-              AND YEAR(r.RECEIPT_CREATED_DATE) = @Year
-            GROUP BY r.CUSTOMER_ID
-        )
-        MERGE CUSTOMER_SPENDING AS tgt
-        USING ReceiptYearly AS src
-           ON tgt.CUSTOMER_ID = src.CUSTOMER_ID
-          AND tgt.YEAR        = src.[YEAR]
-        WHEN MATCHED THEN
-            UPDATE SET MONEY_SPENT = src.TotalSpent
-        WHEN NOT MATCHED BY TARGET THEN
-            INSERT (CUSTOMER_ID, YEAR, MONEY_SPENT)
-            VALUES (src.CUSTOMER_ID, src.[YEAR], src.TotalSpent)
-        WHEN NOT MATCHED BY SOURCE AND tgt.YEAR = @Year THEN
-            UPDATE SET MONEY_SPENT = 0
-        ;
-
         ;WITH CustSpend AS (
             SELECT
                 c.CUSTOMER_ID,
