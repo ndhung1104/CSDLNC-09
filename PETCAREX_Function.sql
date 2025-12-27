@@ -986,28 +986,48 @@ BEGIN
 
     BEGIN TRY
         BEGIN TRAN;
+        
         ;WITH CustSpend AS (
             SELECT
                 c.CUSTOMER_ID,
                 c.MEMBERSHIP_RANK_ID AS CurrentRankId,
-                s.MONEY_SPENT
+                mr.MEMBERSHIP_RANK_MAINTAIN_THRESHOLD,
+                ISNULL(s.MONEY_SPENT, 0) AS MONEY_SPENT
             FROM CUSTOMER c
-            LEFT JOIN CUSTOMER_SPENDING s
-                ON s.CUSTOMER_ID = c.CUSTOMER_ID
-               AND s.YEAR        = @Year
+            JOIN MEMBERSHIP_RANK mr ON mr.MEMBERSHIP_RANK_ID = c.MEMBERSHIP_RANK_ID
+            LEFT JOIN CUSTOMER_SPENDING s 
+                ON s.CUSTOMER_ID = c.CUSTOMER_ID 
+               AND s.YEAR = @Year
         ),
-        TargetRank AS (
+        RankCalc AS (
             SELECT
                 cs.CUSTOMER_ID,
                 cs.CurrentRankId,
                 cs.MONEY_SPENT,
-                NewRankId = COALESCE((
+                cs.MEMBERSHIP_RANK_MAINTAIN_THRESHOLD,
+                -- Hạng theo năng lực chi tiêu (Performance Rank)
+                PerformanceRankId = ISNULL((
                     SELECT TOP(1) r.MEMBERSHIP_RANK_ID
                     FROM MEMBERSHIP_RANK r
                     WHERE cs.MONEY_SPENT >= r.MEMBERSHIP_RANK_UPGRADE_CONDITION
                     ORDER BY r.MEMBERSHIP_RANK_UPGRADE_CONDITION DESC
-                ), cs.CurrentRankId)
+                ), (SELECT TOP(1) MEMBERSHIP_RANK_ID FROM MEMBERSHIP_RANK ORDER BY MEMBERSHIP_RANK_UPGRADE_CONDITION ASC))
             FROM CustSpend cs
+        ),
+        FinalRank AS (
+            SELECT
+                CUSTOMER_ID,
+                CurrentRankId,
+                MONEY_SPENT,
+                -- Logic: Performance vs Maintain
+                NewRankId = CASE
+                    -- Nếu rớt hạng theo chuẩn Upgrade nhưng đủ chuẩn Maintain -> Giữ hạng
+                    WHEN PerformanceRankId < CurrentRankId
+                         AND MONEY_SPENT >= MEMBERSHIP_RANK_MAINTAIN_THRESHOLD THEN CurrentRankId
+                    -- Các trường hợp còn lại (Lên hạng, hoặc rớt thật sự) -> Theo Performance
+                    ELSE PerformanceRankId
+                END
+            FROM RankCalc
         ),
         Classified AS (
             SELECT
@@ -1016,11 +1036,11 @@ BEGIN
                 NewRankId,
                 MONEY_SPENT,
                 CaseType = CASE
-                    WHEN NewRankId = CurrentRankId THEN 'KEEP'
                     WHEN NewRankId > CurrentRankId THEN 'UPGRADE'
                     WHEN NewRankId < CurrentRankId THEN 'DOWNGRADE'
+                    ELSE 'KEEP'
                 END
-            FROM TargetRank
+            FROM FinalRank
         )
         SELECT * INTO #MembershipReview FROM Classified;
 
