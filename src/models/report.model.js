@@ -164,65 +164,75 @@ export async function getAvailableDates({ branchId }) {
 // Run yearly membership review - Use Case 6
 export async function runYearlyMembershipReview({ year }) {
     try {
-        const result = await db.raw(`
-            EXEC dbo.uspRunYearlyMembershipReview @Year = ?
+        // 1. Get customers with spending from CUSTOMER_SPENDING and current rank
+        const customers = await db.raw(`
+            SELECT 
+                c.CUSTOMER_ID,
+                c.CUSTOMER_NAME,
+                c.MEMBERSHIP_RANK_ID as CurrentRankId,
+                cr.MEMBERSHIP_RANK_NAME as CurrentRankName,
+                ISNULL(cs.MONEY_SPENT, 0) as MONEY_SPENT
+            FROM CUSTOMER c
+            LEFT JOIN CUSTOMER_SPENDING cs 
+                ON cs.CUSTOMER_ID = c.CUSTOMER_ID AND cs.YEAR = ?
+            LEFT JOIN MEMBERSHIP_RANK cr 
+                ON cr.MEMBERSHIP_RANK_ID = c.MEMBERSHIP_RANK_ID
         `, [year]);
 
-        console.log('=== MEMBERSHIP REVIEW DEBUG ===');
-        console.log('Result type:', typeof result);
-        console.log('Is Array:', Array.isArray(result));
-        console.log('Result length:', result?.length);
-        console.log('First few items:', JSON.stringify(result?.slice?.(0, 3)));
-        console.log('=== END DEBUG ===');
+        // 2. Get rank thresholds (ordered by threshold DESC so highest rank first)
+        const ranks = await db.raw(`
+            SELECT 
+                MEMBERSHIP_RANK_ID as id, 
+                MEMBERSHIP_RANK_NAME as name, 
+                MEMBERSHIP_RANK_UPGRADE_CONDITION as threshold
+            FROM MEMBERSHIP_RANK
+            ORDER BY MEMBERSHIP_RANK_UPGRADE_CONDITION DESC
+        `);
 
-        // The stored procedure returns 2 result sets but mssql driver flattens them
-        let summary = { totalUpgrades: 0, totalDowngrades: 0, totalMaintained: 0 };
-        let upgrades = [];
-        let downgrades = [];
-        let maintained = [];
+        // 3. Classify customers
+        let upgrades = [], downgrades = [], maintained = [];
 
-        // Handle as flat array - look for rows with CaseType property (detail rows)
-        if (Array.isArray(result)) {
-            result.forEach(row => {
-                // Summary rows have CaseType and CustomerCount
-                if (row && row.CaseType && row.CustomerCount !== undefined) {
-                    if (row.CaseType === 'UPGRADE') summary.totalUpgrades = row.CustomerCount;
-                    else if (row.CaseType === 'DOWNGRADE') summary.totalDowngrades = row.CustomerCount;
-                    else if (row.CaseType === 'KEEP') summary.totalMaintained = row.CustomerCount;
-                }
-                // Detail rows have CUSTOMER_ID and CaseType but no CustomerCount
-                else if (row && row.CUSTOMER_ID && row.CaseType) {
-                    const customer = {
-                        CUSTOMER_ID: row.CUSTOMER_ID,
-                        CUSTOMER_NAME: `Khách hàng #${row.CUSTOMER_ID}`,
-                        MEMBERSHIP_RANK_NAME: row.CurrentRankName,
-                        NewRank: row.NewRankName,
-                        MONEY_SPENT: row.MONEY_SPENT
-                    };
-                    if (row.CaseType === 'UPGRADE') upgrades.push(customer);
-                    else if (row.CaseType === 'DOWNGRADE') downgrades.push(customer);
-                    else if (row.CaseType === 'KEEP') maintained.push(customer);
-                }
-            });
+        for (const c of customers) {
+            // Find new rank based on spending (first rank where spending >= threshold)
+            const newRank = ranks.find(r => c.MONEY_SPENT >= (r.threshold || 0)) || ranks[ranks.length - 1];
+
+            const customer = {
+                CUSTOMER_ID: c.CUSTOMER_ID,
+                CUSTOMER_NAME: c.CUSTOMER_NAME,
+                MEMBERSHIP_RANK_NAME: c.CurrentRankName,
+                NewRank: newRank.name,
+                MONEY_SPENT: c.MONEY_SPENT,
+                newRankId: newRank.id
+            };
+
+            if (newRank.id > c.CurrentRankId) {
+                upgrades.push(customer);
+            } else if (newRank.id < c.CurrentRankId) {
+                downgrades.push(customer);
+            } else {
+                maintained.push(customer);
+            }
         }
 
-        // If summary wasn't parsed from result, compute from arrays
-        if (summary.totalUpgrades === 0 && summary.totalDowngrades === 0 && summary.totalMaintained === 0) {
-            summary = {
+        // 4. Update customer ranks for those who changed
+        for (const c of [...upgrades, ...downgrades]) {
+            await db.raw(`
+                UPDATE CUSTOMER 
+                SET MEMBERSHIP_RANK_ID = ? 
+                WHERE CUSTOMER_ID = ?
+            `, [c.newRankId, c.CUSTOMER_ID]);
+        }
+
+        return {
+            upgrades,
+            downgrades,
+            maintained,
+            summary: {
                 totalUpgrades: upgrades.length,
                 totalDowngrades: downgrades.length,
                 totalMaintained: maintained.length
-            };
-        }
-
-        console.log('=== PARSED RESULT ===');
-        console.log('Upgrades count:', upgrades.length);
-        console.log('Downgrades count:', downgrades.length);
-        console.log('Maintained count:', maintained.length);
-        console.log('Summary:', summary);
-        console.log('=== END ===');
-
-        return { upgrades, downgrades, maintained, summary };
+            }
+        };
     } catch (err) {
         console.error('MEMBERSHIP REVIEW ERROR:', err);
         return {
