@@ -1044,11 +1044,15 @@ BEGIN
         )
         SELECT * INTO #MembershipReview FROM Classified;
 
-        UPDATE c
-        SET c.MEMBERSHIP_RANK_ID = r.NewRankId
-        FROM CUSTOMER c
-        JOIN #MembershipReview r
-            ON r.CUSTOMER_ID = c.CUSTOMER_ID;
+        -- Chỉ update khi xem báo cáo của năm hiện tại
+        IF (@Year = YEAR(GETDATE()))
+        BEGIN
+            UPDATE c
+            SET c.MEMBERSHIP_RANK_ID = r.NewRankId
+            FROM CUSTOMER c
+            JOIN #MembershipReview r
+                ON r.CUSTOMER_ID = c.CUSTOMER_ID;
+        END
 
         -- Summary
         SELECT
