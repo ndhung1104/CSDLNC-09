@@ -31,7 +31,12 @@
                     </a>
                 </li>
                                 <li class="nav-item">
-                    <a class="nav-link <%= title.includes('Appointment') ? 'active' : '' %>" href="/appointments/new">
+                    <a class="nav-link <%= title === 'Appointments' ? 'active' : '' %>" href="/appointments">
+                        <i class="bi bi-calendar-event me-3"></i> Appointments
+                    </a>
+                </li>
+                                <li class="nav-item">
+                    <a class="nav-link <%= title === 'New Appointment' ? 'active' : '' %>" href="/appointments/new">
                         <i class="bi bi-calendar-plus me-3"></i> Walk-in Appointment
                     </a>
                 </li>

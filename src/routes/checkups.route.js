@@ -81,10 +81,26 @@ router.get('/:id', requireAnyEmployee(), async (req, res) => {
 // Update checkup notes - Use Case 2
 router.post('/:id/update', requireAnyEmployee(), async (req, res) => {
     const { symptoms, diagnosis, followUpVisit, status } = req.body;
+    
+    console.log('Update Checkup Notes:', { symptoms, diagnosis, followUpVisit, status });
+
     try {
-        await checkupModel.updateNotes({ checkupId: req.params.id, symptoms, diagnosis, followUpVisit: followUpVisit || null, status });
+        // Xử lý chuyển đổi Date tại đây
+        // Nếu followUpVisit là chuỗi rỗng "" hoặc undefined -> gán null
+        // Nếu có giá trị -> tạo đối tượng Date
+        const parsedFollowUp = followUpVisit ? new Date(followUpVisit) : null;
+
+        await checkupModel.updateNotes({ 
+            checkupId: req.params.id, 
+            symptoms, 
+            diagnosis, 
+            followUpVisit: parsedFollowUp, // Truyền Date object hoặc null
+            status 
+        });
+
         res.redirect(`/checkups/${req.params.id}`);
     } catch (err) {
+        console.error(err); // Nên log lỗi ra console để debug thêm nếu cần
         res.redirect(`/checkups/${req.params.id}?error=${encodeURIComponent(err.message)}`);
     }
 });

@@ -193,3 +193,89 @@ export async function getVetScheduleOverview({ branchId = null } = {}) {
     .orderBy('vs.DAY_OF_WEEK', 'asc')
     .orderBy('vs.START_TIME', 'asc');
 }
+
+// Get all appointments with filters and pagination
+export async function getAll({
+  status = null,
+  fromDate = null,
+  toDate = null,
+  q = '',
+  page = 1,
+  limit = 20
+} = {}) {
+  const offset = (page - 1) * limit;
+  const filters = [];
+  const params = [];
+
+  if (status) {
+    const normalized = String(status).toLowerCase();
+    const statusTokens = {
+      pending: ['%pending%', '%cho%'],
+      confirmed: ['%confirm%'],
+      completed: ['%complete%', '%hoan%'],
+      cancelled: ['%cancel%', '%huy%']
+    }[normalized] || [`%${status}%`];
+    const statusFilters = statusTokens.map(() => 'a.APPOINTMENT_STATUS COLLATE Latin1_General_CI_AI LIKE ?');
+    filters.push(`(${statusFilters.join(' OR ')})`);
+    params.push(...statusTokens);
+  }
+  if (fromDate) {
+    filters.push('CONVERT(DATE, a.APPOINTMENT_DATE) >= CONVERT(DATE, ?)');
+    params.push(fromDate);
+  }
+  if (toDate) {
+    filters.push('CONVERT(DATE, a.APPOINTMENT_DATE) <= CONVERT(DATE, ?)');
+    params.push(toDate);
+  }
+  if (q) {
+    filters.push(`(
+      cu.CUSTOMER_NAME COLLATE Latin1_General_CI_AI LIKE ?
+      OR s.SERVICE_NAME COLLATE Latin1_General_CI_AI LIKE ?
+      OR CAST(a.APPOINTMENT_ID AS NVARCHAR(20)) LIKE ?
+    )`);
+    const token = `%${q}%`;
+    params.push(token, token, token);
+  }
+
+  const whereClause = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
+
+  const countResult = await db.raw(`
+    SELECT COUNT(*) as count
+    FROM APPOINTMENT a
+    JOIN CUSTOMER cu ON a.CUSTOMER_ID = cu.CUSTOMER_ID
+    JOIN BRANCH b ON a.BRANCH_ID = b.BRANCH_ID
+    JOIN SERVICE s ON a.SERVICE_ID = s.SERVICE_ID
+    LEFT JOIN EMPLOYEE e ON a.VET_ID = e.EMPLOYEE_ID
+    ${whereClause}
+  `, params);
+  const total = countResult[0]?.count || 0;
+
+  const dataParams = [...params, offset, limit];
+  const appointments = await db.raw(`
+    SELECT
+      a.APPOINTMENT_ID as id,
+      a.APPOINTMENT_DATE as date,
+      a.APPOINTMENT_STATUS as status,
+      cu.CUSTOMER_ID as customerId,
+      cu.CUSTOMER_NAME as customerName,
+      b.BRANCH_NAME as branchName,
+      s.SERVICE_NAME as serviceName,
+      e.EMPLOYEE_NAME as vetName
+    FROM APPOINTMENT a
+    JOIN CUSTOMER cu ON a.CUSTOMER_ID = cu.CUSTOMER_ID
+    JOIN BRANCH b ON a.BRANCH_ID = b.BRANCH_ID
+    JOIN SERVICE s ON a.SERVICE_ID = s.SERVICE_ID
+    LEFT JOIN EMPLOYEE e ON a.VET_ID = e.EMPLOYEE_ID
+    ${whereClause}
+    ORDER BY a.APPOINTMENT_DATE DESC
+    OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
+  `, dataParams);
+
+  return { appointments, total, page, limit };
+}
+
+export async function updateStatus({ appointmentId, status }) {
+  await db('APPOINTMENT')
+    .where('APPOINTMENT_ID', appointmentId)
+    .update({ APPOINTMENT_STATUS: status });
+}
