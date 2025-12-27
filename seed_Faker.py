@@ -166,7 +166,7 @@ def insert_customers(n=N_CUSTOMERS):
     for i in range(n):
         seq = start_index + i
         name = fake.name()
-        phone = "0" + str(random.randint(100000000, 999999999))
+        phone = f"09{seq:08d}"
         email = f"user{seq}@example.com"
         password = f"cust_pwd_{seq:010d}"
         gender = random.choice(["Nam", "Nữ"])
