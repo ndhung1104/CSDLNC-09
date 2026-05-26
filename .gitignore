@@ -1,6 +1,12 @@
-**/node_modules
+**/node_modules/
 oldSrc/
+submission/
 **/.env
+**/.env.*
+!**/.env.example
 .DS_Store
-**/pyenv
-submission
+**/pyenv/
+npm-debug.log*
+**/__pycache__/
+*.py[cod]
+.venv/

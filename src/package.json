@@ -2,11 +2,15 @@
     "name": "petcarex",
     "version": "1.0.0",
     "type": "module",
-    "description": "PetCareX - Staff management system for veterinary clinics",
+    "description": "Veterinary clinic management system with staff and customer portals",
     "main": "app.js",
     "scripts": {
         "start": "node app.js",
-        "dev": "nodemon app.js"
+        "dev": "nodemon app.js",
+        "check": "node --check app.js"
+    },
+    "engines": {
+        "node": ">=20.0.0"
     },
     "dependencies": {
         "express": "^4.19.2",

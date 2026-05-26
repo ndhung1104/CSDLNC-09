@@ -1,8 +1,10 @@
-node_modules
-npm-debug.log
-Dockerfile
-src/Dockerfile
+**/node_modules
+npm-debug.log*
 .dockerignore
 .git
 .gitignore
+**/.env
+.DS_Store
 *.log
+docs
+database

@@ -1,6 +1,7 @@
 import pyodbc
 from faker import Faker
 import random
+import os
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -21,13 +22,19 @@ BATCH_SIZE = 2000  # Smaller batch size to avoid memory issues
 # KẾT NỐI SQL SERVER
 # ==============================
 
-# Docker Container SQL Server
+# Docker container SQL Server
+db_host = os.getenv("DB_HOST", "127.0.0.1")
+db_port = os.getenv("DB_PORT", "1433")
+db_user = os.getenv("DB_USER", "sa")
+db_password = os.getenv("DB_PASSWORD", "PetCareX@2024")
+db_name = os.getenv("DB_NAME", "PETCAREX")
+
 conn_str = (
     "DRIVER={ODBC Driver 18 for SQL Server};"
-    "SERVER=127.0.0.1,1433;"
-    "DATABASE=PETCAREX;"
-    "UID=sa;"
-    "PWD=PetCareX@2024;"
+    f"SERVER={db_host},{db_port};"
+    f"DATABASE={db_name};"
+    f"UID={db_user};"
+    f"PWD={db_password};"
     "TrustServerCertificate=yes;"
 )
 
@@ -70,7 +77,7 @@ def bulk_insert(sql, data, table_name):
         print(f"  > {table_name}: {min(i+BATCH_SIZE, total):,}/{total:,} inserted...")
 
 # ==============================
-# SEED MASTER (seed_master.sql)
+# SEED MASTER (seed.sql)
 # ==============================
 def execute_sql_batches(sql_text):
     batches = []
@@ -93,10 +100,10 @@ def execute_sql_batches(sql_text):
     conn.commit()
 
 
-def run_seed_master_file():
-    sql_path = Path(__file__).resolve().parent / "seed_master.sql"
+def run_seed_file():
+    sql_path = Path(__file__).resolve().parent / "seed.sql"
     if not sql_path.exists():
-        raise FileNotFoundError(f"seed_master.sql not found at {sql_path}")
+        raise FileNotFoundError(f"seed.sql not found at {sql_path}")
 
     print(f"Running master seed from {sql_path.name} ...")
     sql_text = sql_path.read_text(encoding="utf-8", errors="ignore")
@@ -113,7 +120,7 @@ def ensure_master_seeded():
     service_count = cursor.fetchone()[0]
 
     if membership_count == 0 and breed_count == 0 and service_count == 0:
-        run_seed_master_file()
+        run_seed_file()
         return
 
     if membership_count == 0 or breed_count == 0 or service_count == 0:
@@ -121,7 +128,7 @@ def ensure_master_seeded():
             "Master data is partially present. Please reseed or clean the master tables before rerunning."
         )
 
-    print("Master data detected, skip seed_master.sql.")
+    print("Master data detected, skip seed.sql.")
 
 
 # ==============================
@@ -142,7 +149,7 @@ receptionist_ids = [r[0] for r in rows if r[1].strip() in ("RECEP", "SALES")]
 vet_ids = [r[0] for r in rows if r[1].strip() == "VET"]
 
 if not membership_ids or not breed_ids or not branch_ids or not sales_product_ids or not medical_service_ids:
-    raise RuntimeError("Missing master data. Run seed_master.sql first.")
+    raise RuntimeError("Missing master data. Run seed.sql first.")
 
 print("Master IDs loaded.")
 print(f"- MEMBERSHIP_RANK: {len(membership_ids)}")

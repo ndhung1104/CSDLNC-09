@@ -17,7 +17,7 @@ const db = knex({
 });
 
 db.raw('SELECT 1')
-    .then(() => console.log('✅ Database connected'))
-    .catch((err) => console.error('❌ Database error:', err.message));
+    .then(() => console.log('Database connected'))
+    .catch((err) => console.error('Database error:', err.message));
 
 export default db;

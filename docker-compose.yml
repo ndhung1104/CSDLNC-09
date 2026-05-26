@@ -3,21 +3,17 @@ services:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: petcarex-mssql
     environment:
-      SA_PASSWORD: "PetCareX@2024"
       ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${DB_PASSWORD:-PetCareX@2024}"
       MSSQL_PID: "Express"
     ports:
       - "1433:1433"
     volumes:
       - mssql_data:/var/opt/mssql
-      - ./PETCAREX_Script.sql:/scripts/PETCAREX_Script.sql
-      - ./PETCAREX_Function.sql:/scripts/PETCAREX_Function.sql
-      - ./seed_master.sql:/scripts/seed_master.sql
-      - ./init-db.sh:/scripts/init-db.sh
     networks:
       - petcarex-network
     healthcheck:
-      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "PetCareX@2024" -Q "SELECT 1" -C || exit 1
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -Q "SELECT 1" -C || exit 1
       interval: 10s
       timeout: 5s
       retries: 10
@@ -31,22 +27,12 @@ services:
       mssql:
         condition: service_healthy
     volumes:
-      - ./PETCAREX_Script.sql:/scripts/PETCAREX_Script.sql
-      - ./PETCAREX_Function.sql:/scripts/PETCAREX_Function.sql
-      - ./seed_master.sql:/scripts/seed_master.sql
+      - ./database:/scripts:ro
     environment:
-      SA_PASSWORD: "PetCareX@2024"
+      DB_PASSWORD: "${DB_PASSWORD:-PetCareX@2024}"
     networks:
       - petcarex-network
-    entrypoint:
-      - /bin/bash
-      - -c
-      - |
-        sleep 5
-        /opt/mssql-tools18/bin/sqlcmd -S mssql -U sa -P "$$SA_PASSWORD" -d master -i /scripts/PETCAREX_Script.sql -C
-        /opt/mssql-tools18/bin/sqlcmd -S mssql -U sa -P "$$SA_PASSWORD" -d PETCAREX -i /scripts/PETCAREX_Function.sql -C
-        /opt/mssql-tools18/bin/sqlcmd -S mssql -U sa -P "$$SA_PASSWORD" -d PETCAREX -i /scripts/seed_master.sql -C
-        echo "DB init complete!"
+    entrypoint: [ "/bin/bash", "/scripts/init-db.sh" ]
 
   app:
     build:
@@ -59,12 +45,13 @@ services:
       - ./src:/app
       - /app/node_modules
     environment:
-      PORT: 54321
-      DB_HOST: mssql
-      DB_PORT: 1433
-      DB_USER: sa
-      DB_PASSWORD: "PetCareX@2024"
-      DB_NAME: PETCAREX
+      PORT: "${PORT:-54321}"
+      DB_HOST: "${DB_HOST:-mssql}"
+      DB_PORT: "${DB_PORT:-1433}"
+      DB_USER: "${DB_USER:-sa}"
+      DB_PASSWORD: "${DB_PASSWORD:-PetCareX@2024}"
+      DB_NAME: "${DB_NAME:-PETCAREX}"
+      SESSION_SECRET: "${SESSION_SECRET:-petcarex-local-session-secret}"
     depends_on:
       mssql:
         condition: service_healthy
